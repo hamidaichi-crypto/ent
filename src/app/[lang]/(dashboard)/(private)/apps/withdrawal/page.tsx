@@ -1,9 +1,9 @@
 // Component Imports
-import MemberList from '@views/apps/member/list'
+import WithdrawalList from '@views/apps/withdrawal'
 
 const getMemberListData = async () => {
     // Vars
-    const res = await fetch('https://xpi.machibo.com/api/members?page=1', {
+    const res = await fetch('https://xpi.machibo.com/api/withdrawals?page=1', {
         method: 'GET',
         headers: {
             'Accept': 'application/json',
@@ -18,12 +18,12 @@ const getMemberListData = async () => {
     return res.json()
 }
 
-const MemberListApp = async () => {
+const WithdrawalListApp = async () => {
     // Vars
     const data = await getMemberListData()
     console.log("data123", data?.data?.rows)
 
-    return <MemberList memberData={data?.data?.rows} />
+    return <WithdrawalList withdrawalData={data?.data?.rows} />
 }
 
-export default MemberListApp
+export default WithdrawalListApp

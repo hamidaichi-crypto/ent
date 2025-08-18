@@ -95,7 +95,6 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
                 <MenuSection label="MACHIBET">
                     <SubMenu label={dictionary['navigation'].member} icon={<i className='ri-user-line' />}>
                         <MenuItem href={`/${locale}/apps/member/list`}>{dictionary['navigation'].list}</MenuItem>
-                        <MenuItem href={`/${locale}/apps/member/view`}>{dictionary['navigation'].view}</MenuItem>
                     </SubMenu>
                 </MenuSection>
                 <MenuSection label="PAYMENT">
@@ -108,24 +107,24 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
                         {dictionary['navigation'].withdrawal}
                     </MenuItem>
                 </MenuSection>
-                <SubMenu label={dictionary['navigation'].frontPages} icon={<i className='ri-file-copy-line' />}>
-                    <MenuItem href='/front-pages/landing-page' target='_blank'>
-                        {dictionary['navigation'].landing}
-                    </MenuItem>
-                    <MenuItem href='/front-pages/pricing' target='_blank'>
-                        {dictionary['navigation'].pricing}
-                    </MenuItem>
-                    <MenuItem href='/front-pages/payment' target='_blank'>
-                        {dictionary['navigation'].payment}
-                    </MenuItem>
-                    <MenuItem href='/front-pages/checkout' target='_blank'>
-                        {dictionary['navigation'].checkout}
-                    </MenuItem>
-                    <MenuItem href='/front-pages/help-center' target='_blank'>
-                        {dictionary['navigation'].helpCenter}
-                    </MenuItem>
-                </SubMenu>
                 <MenuSection label={dictionary['navigation'].appsPages}>
+                    <SubMenu label={dictionary['navigation'].frontPages} icon={<i className='ri-file-copy-line' />}>
+                        <MenuItem href='/front-pages/landing-page' target='_blank'>
+                            {dictionary['navigation'].landing}
+                        </MenuItem>
+                        <MenuItem href='/front-pages/pricing' target='_blank'>
+                            {dictionary['navigation'].pricing}
+                        </MenuItem>
+                        <MenuItem href='/front-pages/payment' target='_blank'>
+                            {dictionary['navigation'].payment}
+                        </MenuItem>
+                        <MenuItem href='/front-pages/checkout' target='_blank'>
+                            {dictionary['navigation'].checkout}
+                        </MenuItem>
+                        <MenuItem href='/front-pages/help-center' target='_blank'>
+                            {dictionary['navigation'].helpCenter}
+                        </MenuItem>
+                    </SubMenu>
                     <SubMenu label={dictionary['navigation'].eCommerce} icon={<i className='ri-shopping-bag-3-line' />}>
                         <MenuItem href={`/${locale}/apps/ecommerce/dashboard`}>{dictionary['navigation'].dashboard}</MenuItem>
                         <SubMenu label={dictionary['navigation'].products}>

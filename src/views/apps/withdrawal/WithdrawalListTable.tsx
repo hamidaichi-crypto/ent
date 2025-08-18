@@ -21,6 +21,8 @@ import { styled } from '@mui/material/styles'
 import TablePagination from '@mui/material/TablePagination'
 import type { TextFieldProps } from '@mui/material/TextField'
 
+import DialogAddNewWithdrawal from './DialogAddNewWithdrawal'
+
 // Third-party Imports
 import classnames from 'classnames'
 import { rankItem } from '@tanstack/match-sorter-utils'
@@ -41,7 +43,7 @@ import type { RankingInfo } from '@tanstack/match-sorter-utils'
 
 // Type Imports
 import type { ThemeColor } from '@core/types'
-import type { MemberType } from '@/types/apps/memberTypes'
+import type { WithdrawalType } from '@/types/apps/withdrawalTypes'
 import type { Locale } from '@configs/i18n'
 
 // Component Imports
@@ -66,7 +68,7 @@ declare module '@tanstack/table-core' {
     }
 }
 
-type MembersTypeWithAction = MemberType & {
+type WithdrawalTypeWithAction = WithdrawalType & {
     action?: string
 }
 
@@ -139,9 +141,9 @@ const userStatusObj: UserStatusType = {
 }
 
 // Column Definitions
-const columnHelper = createColumnHelper<MembersTypeWithAction>()
+const columnHelper = createColumnHelper<WithdrawalTypeWithAction>()
 
-const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
+const UserListTable = ({ tableData }: { tableData?: WithdrawalType[] }) => {
     // States
     const [addUserOpen, setAddUserOpen] = useState(false)
     const [rowSelection, setRowSelection] = useState({})
@@ -152,7 +154,7 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
     // Hooks
     const { lang: locale } = useParams()
 
-    const columns = useMemo<ColumnDef<MembersTypeWithAction, any>[]>(
+    const columns = useMemo<ColumnDef<WithdrawalTypeWithAction, any>[]>(
         () => [
             {
                 id: 'select',
@@ -176,33 +178,19 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
                     />
                 )
             },
-            //   columnHelper.accessor('fullName', {
-            //     header: 'User',
-            //     cell: ({ row }) => (
-            //       <div className='flex items-center gap-3'>
-            //         {getAvatar({ avatar: row.original.avatar, fullName: row.original.fullName })}
-            //         <div className='flex flex-col'>
-            //           <Typography color='text.primary' className='font-medium'>
-            //             {row.original.fullName}
-            //           </Typography>
-            //           <Typography variant='body2'>{row.original.username}</Typography>
-            //         </div>
-            //       </div>
-            //     )
-            //   }),
             columnHelper.accessor('action', {
                 header: 'Action',
                 cell: ({ row }) => (
                     <div className='flex items-center gap-0.5'>
-                        <IconButton size='small' onClick={() => setData(data?.filter(product => product.id !== row.original.id))}>
+                        {/* <IconButton size='small' onClick={() => setData(data?.filter(product => product.id !== row.original.id))}>
                             <i className='ri-delete-bin-7-line text-textSecondary' />
-                        </IconButton>
+                        </IconButton> */}
                         <IconButton size='small'>
                             <Link href={getLocalizedUrl('/apps/user/view', locale as Locale)} className='flex'>
                                 <i className='ri-eye-line text-textSecondary' />
                             </Link>
                         </IconButton>
-                        <OptionMenu
+                        {/* <OptionMenu
                             iconClassName='text-textSecondary'
                             options={[
                                 {
@@ -214,70 +202,70 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
                                     icon: 'ri-edit-box-line'
                                 }
                             ]}
-                        />
+                        /> */}
                     </div>
                 ),
                 enableSorting: false
             }),
             columnHelper.accessor('id', {
-                header: 'Member ID',
+                header: 'ID',
                 cell: ({ row }) => <Typography>{row.original.id}</Typography>
             }),
+            columnHelper.accessor('member_id', {
+                header: 'Member ID',
+                cell: ({ row }) => <Typography>{row.original.member_id}</Typography>
+            }),
             columnHelper.accessor('username', {
-                header: 'User Name',
+                header: 'Username',
                 cell: ({ row }) => <Typography>{row.original.username}</Typography>
             }),
-            columnHelper.accessor('score', {
-                header: 'Score',
+            columnHelper.accessor('risk_score', {
+                header: 'Risk Score',
                 cell: ({ row }) => <Typography> - </Typography>
             }),
             columnHelper.accessor('grade', {
                 header: 'Grade',
-                cell: ({ row }) => <Typography> - </Typography>
-            }),
-            columnHelper.accessor('name', {
-                header: 'Name',
-                cell: ({ row }) => <Typography>{row.original.name}</Typography>
-            }),
-            columnHelper.accessor('email', {
-                header: 'Email',
-                cell: ({ row }) => <Typography>{row.original.email}</Typography>
-            }),
-            columnHelper.accessor('date_of_birth', {
-                header: 'Birthday',
-                cell: ({ row }) => <Typography>{row.original.date_of_birth}</Typography>
-            }),
-            columnHelper.accessor('mobile', {
-                header: 'Mobile No',
-                cell: ({ row }) => <Typography>{row.original.mobile}</Typography>
-            }),
-            columnHelper.accessor('member_group_id', {
-                header: 'Member Group',
-                cell: ({ row }) => <Typography>{row.original.member_group_id}</Typography>
+                cell: ({ row }) => <Typography>{row.original.grade}</Typography>
             }),
             columnHelper.accessor('status', {
                 header: 'Status',
                 cell: ({ row }) => <Typography>{row.original.status}</Typography>
             }),
-            columnHelper.accessor('referrer', {
-                header: 'Refer By',
-                cell: ({ row }) => <Typography>{row.original.referrer}</Typography>
+            columnHelper.accessor('amount', {
+                header: 'Amount',
+                cell: ({ row }) => <Typography>{row.original.amount}</Typography>
             }),
-            columnHelper.accessor('remark', {
+            columnHelper.accessor('confirm_account', {
+                header: 'Confirm Account',
+                cell: ({ row }) => <Typography>{row.original.confirm_account}</Typography>
+            }),
+            columnHelper.accessor('member_bank', {
+                header: 'Member Bank',
+                cell: ({ row }) => <Typography>{row.original.member_bank}</Typography>
+            }),
+            columnHelper.accessor('member_bank_account', {
+                header: 'Member Bank Account',
+                cell: ({ row }) => <Typography>{row.original.member_bank_account}</Typography>
+            }),
+            columnHelper.accessor('handler', {
+                header: 'Handler',
+                cell: ({ row }) => <Typography>{row.original.handler}</Typography>
+            }),
+            columnHelper.accessor('remarks', {
                 header: 'Remark',
-                cell: ({ row }) => <Typography> - </Typography>
+                cell: ({ row }) => <Typography>{row.original.remarks}</Typography>
             }),
-            columnHelper.accessor('registration_created_at', {
-                header: 'Registration Date',
-                cell: ({ row }) => <Typography>{row.original.registration_created_at}</Typography>
+            columnHelper.accessor('created_at', {
+                header: 'Created Time',
+                cell: ({ row }) => <Typography>{row.original.created_at}</Typography>
             }),
-            columnHelper.accessor('registration_ip', {
-                header: 'Registration IP Address',
-                cell: ({ row }) => <Typography>{row.original.registration_ip}</Typography>
+            columnHelper.accessor('updated_at', {
+                header: 'Updated Time',
+                cell: ({ row }) => <Typography>{row.original.updated_at}</Typography>
             }),
-            columnHelper.accessor('registration_site', {
-                header: 'Registration Domain',
-                cell: ({ row }) => <Typography>{row.original.registration_site}</Typography>
+            columnHelper.accessor('processing_time', {
+                header: 'Processing Time',
+                cell: ({ row }) => <Typography>{row.original.processing_time}</Typography>
             }),
         ],
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -285,7 +273,7 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
     )
 
     const table = useReactTable({
-        data: filteredData as MemberType[],
+        data: filteredData as WithdrawalType[],
         columns,
         filterFns: {
             fuzzy: fuzzyFilter
@@ -313,7 +301,7 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
         getFacetedMinMaxValues: getFacetedMinMaxValues()
     })
 
-    const getAvatar = (params: Pick<MemberType, 'avatar' | 'fullName'>) => {
+    const getAvatar = (params: Pick<WithdrawalType, 'avatar' | 'fullName'>) => {
         const { avatar, fullName } = params
 
         if (avatar) {
@@ -343,7 +331,7 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
                         Export
                     </Button>
                     <div className='flex items-center gap-x-4 max-sm:gap-y-4 flex-col max-sm:is-full sm:flex-row'>
-                        <DebouncedInput
+                        {/* <DebouncedInput
                             value={globalFilter ?? ''}
                             onChange={value => setGlobalFilter(String(value))}
                             placeholder='Search User'
@@ -351,7 +339,8 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
                         />
                         <Button variant='contained' onClick={() => setAddUserOpen(!addUserOpen)} className='max-sm:is-full'>
                             Add New User
-                        </Button>
+                        </Button> */}
+                        <DialogAddNewWithdrawal />
                     </div>
                 </div>
                 <div className='overflow-x-auto'>
@@ -425,12 +414,12 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
                     onRowsPerPageChange={e => table.setPageSize(Number(e.target.value))}
                 />
             </Card>
-            <AddUserDrawer
+            {/* <AddUserDrawer
                 open={addUserOpen}
                 handleClose={() => setAddUserOpen(!addUserOpen)}
                 userData={data}
                 setData={setData}
-            />
+            /> */}
         </>
     )
 }

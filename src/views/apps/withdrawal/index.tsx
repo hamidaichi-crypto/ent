@@ -2,19 +2,19 @@
 import Grid from '@mui/material/Grid2'
 
 // Type Imports
-import type { MemberType } from '@/types/apps/memberTypes'
+import type { WithdrawalType } from '@/types/apps/withdrawalTypes'
 
 // Component Imports
-import MemberListTable from './MemberListTable'
+import WithdrawalListTable from './WithdrawalListTable'
 
-const MemberList = ({ memberData }: { memberData?: MemberType[] }) => {
-  return (
-    <Grid container spacing={6}>
-      <Grid size={{ xs: 12 }}>
-        <MemberListTable tableData={memberData} />
-      </Grid>
-    </Grid>
-  )
+const WithdrawalList = ({ withdrawalData }: { withdrawalData?: WithdrawalType[] }) => {
+    return (
+        <Grid container spacing={6}>
+            <Grid size={{ xs: 12 }}>
+                <WithdrawalListTable tableData={withdrawalData} />
+            </Grid>
+        </Grid>
+    )
 }
 
-export default MemberList
+export default WithdrawalList
