@@ -13,28 +13,28 @@ import Select from '@mui/material/Select'
 // import type { UsersType } from '@/types/apps/userTypes'
 import { MemberType } from '@/types/apps/memberTypes'
 
-const TableFilters = ({ setData, tableData }: { setData: (data: MemberType[]) => void; tableData?: UsersType[] }) => {
-  // States
-//   const [role, setRole] = useState<MemberType['role']>('')
-//   const [plan, setPlan] = useState<MemberType['currentPlan']>('')
-  const [status, setStatus] = useState<MemberType['status']>(0)
+const TableFilters = ({ setData, tableData }: { setData: (data: MemberType[]) => void; tableData?: MemberType[] }) => {
+    // States
+    //   const [role, setRole] = useState<MemberType['role']>('')
+    //   const [plan, setPlan] = useState<MemberType['currentPlan']>('')
+    const [status, setStatus] = useState<MemberType['status']>(0)
 
-  useEffect(() => {
-    const filteredData = tableData?.filter(member => {
-        console.log("member")
-    //   if (role && user.role !== role) return false
-    //   if (plan && user.currentPlan !== plan) return false
-    //   if (status && member.status !== status) return false
+    useEffect(() => {
+        const filteredData = tableData?.filter(member => {
+            console.log("member")
+            //   if (role && user.role !== role) return false
+            //   if (plan && user.currentPlan !== plan) return false
+            //   if (status && member.status !== status) return false
 
-      return true
-    })
+            return true
+        })
 
-    setData(filteredData || [])
-  }, [tableData, setData])
+        setData(filteredData || [])
+    }, [tableData, setData])
 
-  return (
-    <CardContent>
-      {/* <Grid container spacing={5}>
+    return (
+        <CardContent>
+            {/* <Grid container spacing={5}>
         <Grid size={{ xs: 12, sm: 4 }}>
           <FormControl fullWidth>
             <InputLabel id='role-select'>Select Role</InputLabel>
@@ -96,8 +96,8 @@ const TableFilters = ({ setData, tableData }: { setData: (data: MemberType[]) =>
           </FormControl>
         </Grid>
       </Grid> */}
-    </CardContent>
-  )
+        </CardContent>
+    )
 }
 
 export default TableFilters

@@ -49,8 +49,7 @@ export type WithdrawalType = {
     risk_score: string, // not available
     grade: string, // not available
     confirm_account: string, // not available
-    handler: string, // not available
-    handler: string, // not available
+    handler: string // not available    
 
     //   avatarColor?: ThemeColor
 }

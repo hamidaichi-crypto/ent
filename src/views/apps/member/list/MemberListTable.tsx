@@ -313,20 +313,6 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
         getFacetedMinMaxValues: getFacetedMinMaxValues()
     })
 
-    const getAvatar = (params: Pick<MemberType, 'avatar' | 'fullName'>) => {
-        const { avatar, fullName } = params
-
-        if (avatar) {
-            return <CustomAvatar src={avatar} skin='light' size={34} />
-        } else {
-            return (
-                <CustomAvatar skin='light' size={34}>
-                    {getInitials(fullName as string)}
-                </CustomAvatar>
-            )
-        }
-    }
-
     return (
         <>
             <Card>
@@ -425,12 +411,6 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
                     onRowsPerPageChange={e => table.setPageSize(Number(e.target.value))}
                 />
             </Card>
-            <AddUserDrawer
-                open={addUserOpen}
-                handleClose={() => setAddUserOpen(!addUserOpen)}
-                userData={data}
-                setData={setData}
-            />
         </>
     )
 }

@@ -1,7 +1,7 @@
 'use client'
 
 // React Imports
-import { useEffect, useState, useMemo } from 'react'
+import { useState, useMemo } from 'react'
 
 // Next Imports
 import Link from 'next/link'
@@ -12,16 +12,11 @@ import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
 import Divider from '@mui/material/Divider'
 import Button from '@mui/material/Button'
-import TextField from '@mui/material/TextField'
 import Typography from '@mui/material/Typography'
-import Chip from '@mui/material/Chip'
 import Checkbox from '@mui/material/Checkbox'
 import IconButton from '@mui/material/IconButton'
 import { styled } from '@mui/material/styles'
 import TablePagination from '@mui/material/TablePagination'
-import type { TextFieldProps } from '@mui/material/TextField'
-
-import DialogAddNewWithdrawal from './DialogAddNewWithdrawal'
 
 // Third-party Imports
 import classnames from 'classnames'
@@ -40,6 +35,7 @@ import {
 } from '@tanstack/react-table'
 import type { ColumnDef, FilterFn } from '@tanstack/react-table'
 import type { RankingInfo } from '@tanstack/match-sorter-utils'
+import DialogAddNewWithdrawal from './DialogAddNewWithdrawal'
 
 // Type Imports
 import type { ThemeColor } from '@core/types'
@@ -48,8 +44,6 @@ import type { Locale } from '@configs/i18n'
 
 // Component Imports
 import TableFilters from './TableFilters'
-import AddUserDrawer from './AddUserDrawer'
-import OptionMenu from '@core/components/option-menu'
 import CustomAvatar from '@core/components/mui/Avatar'
 
 // Util Imports
@@ -72,14 +66,6 @@ type WithdrawalTypeWithAction = WithdrawalType & {
     action?: string
 }
 
-type UserRoleType = {
-    [key: string]: { icon: string; color: string }
-}
-
-type UserStatusType = {
-    [key: string]: ThemeColor
-}
-
 // Styled Components
 const Icon = styled('i')({})
 
@@ -96,56 +82,11 @@ const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
     return itemRank.passed
 }
 
-const DebouncedInput = ({
-    value: initialValue,
-    onChange,
-    debounce = 500,
-    ...props
-}: {
-    value: string | number
-    onChange: (value: string | number) => void
-    debounce?: number
-} & Omit<TextFieldProps, 'onChange'>) => {
-    // States
-    const [value, setValue] = useState(initialValue)
-
-    useEffect(() => {
-        setValue(initialValue)
-    }, [initialValue])
-
-    useEffect(() => {
-        const timeout = setTimeout(() => {
-            onChange(value)
-        }, debounce)
-
-        return () => clearTimeout(timeout)
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [value])
-
-    return <TextField {...props} value={value} onChange={e => setValue(e.target.value)} size='small' />
-}
-
-// Vars
-const userRoleObj: UserRoleType = {
-    admin: { icon: 'ri-vip-crown-line', color: 'error' },
-    author: { icon: 'ri-computer-line', color: 'warning' },
-    editor: { icon: 'ri-edit-box-line', color: 'info' },
-    maintainer: { icon: 'ri-pie-chart-2-line', color: 'success' },
-    subscriber: { icon: 'ri-user-3-line', color: 'primary' }
-}
-
-const userStatusObj: UserStatusType = {
-    active: 'success',
-    pending: 'warning',
-    inactive: 'secondary'
-}
-
 // Column Definitions
 const columnHelper = createColumnHelper<WithdrawalTypeWithAction>()
 
 const UserListTable = ({ tableData }: { tableData?: WithdrawalType[] }) => {
     // States
-    const [addUserOpen, setAddUserOpen] = useState(false)
     const [rowSelection, setRowSelection] = useState({})
     const [data, setData] = useState(...[tableData])
     const [filteredData, setFilteredData] = useState(data)
@@ -301,20 +242,6 @@ const UserListTable = ({ tableData }: { tableData?: WithdrawalType[] }) => {
         getFacetedMinMaxValues: getFacetedMinMaxValues()
     })
 
-    const getAvatar = (params: Pick<WithdrawalType, 'avatar' | 'fullName'>) => {
-        const { avatar, fullName } = params
-
-        if (avatar) {
-            return <CustomAvatar src={avatar} skin='light' size={34} />
-        } else {
-            return (
-                <CustomAvatar skin='light' size={34}>
-                    {getInitials(fullName as string)}
-                </CustomAvatar>
-            )
-        }
-    }
-
     return (
         <>
             <Card>
@@ -331,15 +258,6 @@ const UserListTable = ({ tableData }: { tableData?: WithdrawalType[] }) => {
                         Export
                     </Button>
                     <div className='flex items-center gap-x-4 max-sm:gap-y-4 flex-col max-sm:is-full sm:flex-row'>
-                        {/* <DebouncedInput
-                            value={globalFilter ?? ''}
-                            onChange={value => setGlobalFilter(String(value))}
-                            placeholder='Search User'
-                            className='max-sm:is-full'
-                        />
-                        <Button variant='contained' onClick={() => setAddUserOpen(!addUserOpen)} className='max-sm:is-full'>
-                            Add New User
-                        </Button> */}
                         <DialogAddNewWithdrawal />
                     </div>
                 </div>
