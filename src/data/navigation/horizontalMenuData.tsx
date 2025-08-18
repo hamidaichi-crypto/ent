@@ -190,7 +190,7 @@ const horizontalMenuData = (dictionary: Awaited<ReturnType<typeof getDictionary>
         ]
       },
       {
-        label: dictionary['navigation'].user,
+        label: dictionary['navigation'].invoice,
         icon: 'ri-user-line',
         children: [
           {
@@ -200,6 +200,20 @@ const horizontalMenuData = (dictionary: Awaited<ReturnType<typeof getDictionary>
           {
             label: dictionary['navigation'].view,
             href: '/apps/user/view'
+          }
+        ]
+      },
+      {
+        label: dictionary['navigation'].member,
+        icon: 'ri-user-line',
+        children: [
+          {
+            label: dictionary['navigation'].list,
+            href: '/apps/member/list'
+          },
+          {
+            label: dictionary['navigation'].view,
+            href: '/apps/member/view'
           }
         ]
       },

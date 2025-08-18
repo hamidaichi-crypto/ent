@@ -51,7 +51,7 @@ type ErrorType = {
 type FormData = InferInput<typeof schema>
 
 const schema = object({
-  email: pipe(string(), minLength(1, 'This field is required'), email('Please enter a valid email address')),
+  username: pipe(string(), minLength(1, 'This field is required')),
   password: pipe(
     string(),
     nonEmpty('This field is required'),
@@ -85,8 +85,8 @@ const Login = ({ mode }: { mode: Mode }) => {
   } = useForm<FormData>({
     resolver: valibotResolver(schema),
     defaultValues: {
-      email: 'admin@materialize.com',
-      password: 'admin'
+      username: 'reinerlee', // Changed from email to username
+      password: 'password123'
     }
   })
 
@@ -104,7 +104,7 @@ const Login = ({ mode }: { mode: Mode }) => {
 
   const onSubmit: SubmitHandler<FormData> = async (data: FormData) => {
     const res = await signIn('credentials', {
-      email: data.email,
+      username: data.username, // Changed from email to username
       password: data.password,
       redirect: false
     })
@@ -153,8 +153,8 @@ const Login = ({ mode }: { mode: Mode }) => {
           </div>
           <Alert icon={false} className='bg-[var(--mui-palette-primary-lightOpacity)]'>
             <Typography variant='body2' color='primary.main'>
-              Email: <span className='font-medium'>admin@materialize.com</span> / Pass:{' '}
-              <span className='font-medium'>admin</span>
+              Username: <span className='font-medium'>reinerlee</span> / Pass:{' '}
+              <span className='font-medium'>password123</span>
             </Typography>
           </Alert>
 
@@ -166,7 +166,7 @@ const Login = ({ mode }: { mode: Mode }) => {
             className='flex flex-col gap-5'
           >
             <Controller
-              name='email'
+              name='username' // Changed from email to username
               control={control}
               rules={{ required: true }}
               render={({ field }) => (
@@ -174,15 +174,15 @@ const Login = ({ mode }: { mode: Mode }) => {
                   {...field}
                   fullWidth
                   autoFocus
-                  type='email'
-                  label='Email'
+                  type='text' // Changed type from email to text
+                  label='Username' // Changed label from Email to Username
                   onChange={e => {
                     field.onChange(e.target.value)
                     errorState !== null && setErrorState(null)
                   }}
-                  {...((errors.email || errorState !== null) && {
+                  {...((errors.username || errorState !== null) && { // Changed from errors.email to errors.username
                     error: true,
-                    helperText: errors?.email?.message || errorState?.message[0]
+                    helperText: errors?.username?.message || errorState?.message[0] // Changed from errors.email to errors.username
                   })}
                 />
               )}

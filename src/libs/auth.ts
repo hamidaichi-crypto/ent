@@ -24,44 +24,46 @@ export const authOptions: NextAuthOptions = {
        * As we are using our own Sign-in page, we do not need to change
        * username or password attributes manually in following credentials object.
        */
-      credentials: {},
+      credentials: {
+        username: { label: 'Username', type: 'text' },
+        password: { label: 'Password', type: 'password' }
+      },
       async authorize(credentials) {
-        /*
-         * You need to provide your own logic here that takes the credentials submitted and returns either
-         * an object representing a user or value that is false/null if the credentials are invalid.
-         * For e.g. return { id: 1, name: 'J Smith', email: 'jsmith@example.com' }
-         * You can also use the `req` object to obtain additional parameters (i.e., the request IP address)
-         */
-        const { email, password } = credentials as { email: string; password: string }
-
         try {
-          // ** Login API Call to match the user credentials and receive user data in response along with his role
-          const res = await fetch(`${process.env.API_URL}/login`, {
+          const externalLoginApiUrl = 'https://xpi.machibo.com/api/auth/login';
+
+          const response = await fetch(externalLoginApiUrl, {
             method: 'POST',
             headers: {
-              'Content-Type': 'application/json'
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
             },
-            body: JSON.stringify({ email, password })
-          })
+            body: JSON.stringify({ username: credentials?.username, password: credentials?.password }),
+          });
 
-          const data = await res.json()
-
-          if (res.status === 401) {
-            throw new Error(JSON.stringify(data))
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
           }
 
-          if (res.status === 200) {
-            /*
-             * Please unset all the sensitive information of the user either from API response or before returning
-             * user data below. Below return statement will set the user object in the token and the same is set in
-             * the session which will be accessible all over the app.
-             */
-            return data
-          }
+          const result = await response.json();
 
-          return null
-        } catch (e: any) {
-          throw new Error(e.message)
+          if (result.status === 1 && result.data && result.data.user) {
+            // NextAuth expects a user object with at least an 'id'
+            // The 'token' can be added to the user object if needed in the session/JWT
+            return {
+              id: result.data.user.id.toString(), // ID must be a string
+              name: result.data.user.name || result.data.user.username,
+              email: result.data.user.email || `${result.data.user.username}@example.com`, // Provide an email if available or a placeholder
+              token: result.data.token, // Store the token in the user object
+              ...result.data.user // Spread other user properties
+            };
+          } else {
+            return null; // Authentication failed or no user data
+          }
+        } catch (error: any) {
+          console.error('Error during external login in NextAuth authorize:', error);
+          throw new Error(error.message || 'Failed to authenticate with external API');
         }
       }
     }),
@@ -98,30 +100,28 @@ export const authOptions: NextAuthOptions = {
   },
 
   // ** Please refer to https://next-auth.js.org/configuration/options#callbacks for more `callbacks` options
-  callbacks: {
-    /*
-     * While using `jwt` as a strategy, `jwt()` callback will be called before
-     * the `session()` callback. So we have to add custom parameters in `token`
-     * via `jwt()` callback to make them accessible in the `session()` callback
-     */
-    async jwt({ token, user }) {
-      if (user) {
-        /*
-         * For adding custom parameters to user in session, we first need to add those parameters
-         * in token which then will be available in the `session()` callback
-         */
-        token.name = user.name
+    callbacks: {
+      async jwt({ token, user }) {
+        if (user) {
+          // Add custom parameters to the token from the user object returned by authorize
+          token.id = user.id;
+          token.name = user.name;
+          token.email = user.email;
+          token.username = (user as any).username; // Cast to any to access custom properties
+          token.accessToken = (user as any).token; // Store the token from the external API
+        }
+        return token;
+      },
+      async session({ session, token }) {
+        if (session.user) {
+          // Add custom parameters to the session user object from the token
+          session.user.id = token.id;
+          session.user.name = token.name;
+          session.user.email = token.email;
+          (session.user as any).username = token.username; // Cast to any to add custom properties
+          (session.user as any).accessToken = token.accessToken; // Add the token to the session
+        }
+        return session;
       }
-
-      return token
-    },
-    async session({ session, token }) {
-      if (session.user) {
-        // ** Add custom params to user in session which are added in `jwt()` callback via `token` parameter
-        session.user.name = token.name
-      }
-
-      return session
     }
   }
-}
