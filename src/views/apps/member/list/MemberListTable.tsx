@@ -153,12 +153,32 @@ const MemberListTable = ({
     tableData,
     paginationData,
     onPageChange,
-    onRowsPerPageChange
+    onRowsPerPageChange,
+    filters,
+    onFilterChange,
+    onSearch // Receive onSearch prop
 }: {
     tableData?: MemberType[]
     paginationData: PaginationData
     onPageChange: (page: number) => void
     onRowsPerPageChange: (perPage: number) => void
+    filters: {
+        username: string
+        name: string
+        mobile: string
+        dateType: string
+        startDate: string
+        endDate: string
+    }
+    onFilterChange: (newFilters: {
+        username: string
+        name: string
+        mobile: string
+        dateType: string
+        startDate: string
+        endDate: string
+    }) => void
+    onSearch: () => void // Add onSearch prop
 }) => {
     // States
     const [addUserOpen, setAddUserOpen] = useState(false)
@@ -333,7 +353,7 @@ const MemberListTable = ({
         <>
             <Card>
                 <CardHeader title='Filters' className='pbe-4' />
-                <TableFilters setData={() => { }} tableData={tableData} /> {/* setData and tableData might need adjustment based on how filters work with external pagination */}
+                <TableFilters filters={filters} onFilterChange={onFilterChange} onSearch={onSearch} />
                 <Divider />
                 <div className='flex justify-between gap-4 p-5 flex-col items-start sm:flex-row sm:items-center'>
                     <Button
