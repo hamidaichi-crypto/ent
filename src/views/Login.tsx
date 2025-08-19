@@ -85,8 +85,8 @@ const Login = ({ mode }: { mode: Mode }) => {
     } = useForm<FormData>({
         resolver: valibotResolver(schema),
         defaultValues: {
-            username: 'reinerlee', // Changed from email to username
-            password: 'password123'
+            username: '', // Changed from email to username
+            password: ''
         }
     })
 
@@ -147,16 +147,11 @@ const Login = ({ mode }: { mode: Mode }) => {
                     <Logo />
                 </div>
                 <div className='flex flex-col gap-5 is-full sm:is-auto md:is-full sm:max-is-[400px] md:max-is-[unset]'>
-                    <div>
+                    {/* <div>
                         <Typography variant='h4'>{`Welcome to ${themeConfig.templateName}!👋🏻`}</Typography>
                         <Typography>Please sign-in to your account and start the adventure</Typography>
-                    </div>
-                    <Alert icon={false} className='bg-[var(--mui-palette-primary-lightOpacity)]'>
-                        <Typography variant='body2' color='primary.main'>
-                            Username: <span className='font-medium'>reinerlee</span> / Pass:{' '}
-                            <span className='font-medium'>password123</span>
-                        </Typography>
-                    </Alert>
+                    </div> */}
+
 
                     <form
                         noValidate
@@ -236,14 +231,14 @@ const Login = ({ mode }: { mode: Mode }) => {
                         <Button fullWidth variant='contained' type='submit'>
                             Log In
                         </Button>
-                        <div className='flex justify-center items-center flex-wrap gap-2'>
+                        {/* <div className='flex justify-center items-center flex-wrap gap-2'>
                             <Typography>New on our platform?</Typography>
                             <Typography component={Link} href={getLocalizedUrl('/register', locale as Locale)} color='primary.main'>
                                 Create an account
                             </Typography>
-                        </div>
+                        </div> */}
                     </form>
-                    <Divider className='gap-3'>or</Divider>
+                    {/* <Divider className='gap-3'>or</Divider>
                     <Button
                         color='secondary'
                         className='self-center text-textPrimary'
@@ -252,7 +247,7 @@ const Login = ({ mode }: { mode: Mode }) => {
                         onClick={() => signIn('google')}
                     >
                         Sign in with Google
-                    </Button>
+                    </Button> */}
                 </div>
             </div>
         </div>

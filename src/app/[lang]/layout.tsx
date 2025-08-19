@@ -29,30 +29,30 @@ import '@/app/globals.css'
 import '@assets/iconify-icons/generated-icons.css'
 
 export const metadata = {
-  title: 'Materialize - Material Next.js Admin Template',
-  description: 'Materialize - Material Next.js Admin Template'
+    title: 'Machibo',
+    description: 'Machibo'
 }
 
 const RootLayout = async (props: ChildrenType & { params: Promise<{ lang: Locale }> }) => {
-  const params = await props.params
+    const params = await props.params
 
-  const { children } = props
+    const { children } = props
 
-  // Vars
-  const headersList = await headers()
-  const systemMode = await getSystemMode()
-  const direction = i18n.langDirection[params.lang]
+    // Vars
+    const headersList = await headers()
+    const systemMode = await getSystemMode()
+    const direction = i18n.langDirection[params.lang]
 
-  return (
-    <TranslationWrapper headersList={headersList} lang={params.lang}>
-      <html id='__next' lang={params.lang} dir={direction} suppressHydrationWarning>
-        <body className='flex is-full min-bs-full flex-auto flex-col'>
-          <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
-          {children}
-        </body>
-      </html>
-    </TranslationWrapper>
-  )
+    return (
+        <TranslationWrapper headersList={headersList} lang={params.lang}>
+            <html id='__next' lang={params.lang} dir={direction} suppressHydrationWarning>
+                <body className='flex is-full min-bs-full flex-auto flex-col'>
+                    <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
+                    {children}
+                </body>
+            </html>
+        </TranslationWrapper>
+    )
 }
 
 export default RootLayout

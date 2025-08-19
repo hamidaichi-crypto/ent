@@ -21,11 +21,11 @@ import useVerticalNav from '@menu/hooks/useVerticalNav'
 import { useSettings } from '@core/hooks/useSettings'
 
 type LogoTextProps = {
-  isHovered?: VerticalNavContextProps['isHovered']
-  isCollapsed?: VerticalNavContextProps['isCollapsed']
-  transitionDuration?: VerticalNavContextProps['transitionDuration']
-  isBreakpointReached?: VerticalNavContextProps['isBreakpointReached']
-  color?: CSSProperties['color']
+    isHovered?: VerticalNavContextProps['isHovered']
+    isCollapsed?: VerticalNavContextProps['isCollapsed']
+    transitionDuration?: VerticalNavContextProps['transitionDuration']
+    isBreakpointReached?: VerticalNavContextProps['isBreakpointReached']
+    color?: CSSProperties['color']
 }
 
 const LogoText = styled.span<LogoTextProps>`
@@ -37,55 +37,55 @@ const LogoText = styled.span<LogoTextProps>`
   color: var(--mui-palette-text-primary);
   color: ${({ color }) => color ?? 'var(--mui-palette-text-primary)'};
   transition: ${({ transitionDuration }) =>
-    `margin-inline-start ${transitionDuration}ms ease-in-out, opacity ${transitionDuration}ms ease-in-out`};
+        `margin-inline-start ${transitionDuration}ms ease-in-out, opacity ${transitionDuration}ms ease-in-out`};
 
   ${({ isHovered, isCollapsed, isBreakpointReached }) =>
-    !isBreakpointReached && isCollapsed && !isHovered
-      ? 'opacity: 0; margin-inline-start: 0;'
-      : 'opacity: 1; margin-inline-start: 8px;'}
+        !isBreakpointReached && isCollapsed && !isHovered
+            ? 'opacity: 0; margin-inline-start: 0;'
+            : 'opacity: 1; margin-inline-start: 8px;'}
 `
 
 const Logo = ({ color }: { color?: CSSProperties['color'] }) => {
-  // Refs
-  const logoTextRef = useRef<HTMLSpanElement>(null)
+    // Refs
+    const logoTextRef = useRef<HTMLSpanElement>(null)
 
-  // Hooks
-  const { isHovered, transitionDuration, isBreakpointReached } = useVerticalNav()
-  const { settings } = useSettings()
+    // Hooks
+    const { isHovered, transitionDuration, isBreakpointReached } = useVerticalNav()
+    const { settings } = useSettings()
 
-  // Vars
-  const { layout } = settings
+    // Vars
+    const { layout } = settings
 
-  useEffect(() => {
-    if (layout !== 'collapsed') {
-      return
-    }
+    useEffect(() => {
+        if (layout !== 'collapsed') {
+            return
+        }
 
-    if (logoTextRef && logoTextRef.current) {
-      if (!isBreakpointReached && layout === 'collapsed' && !isHovered) {
-        logoTextRef.current?.classList.add('hidden')
-      } else {
-        logoTextRef.current.classList.remove('hidden')
-      }
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isHovered, layout, isBreakpointReached])
+        if (logoTextRef && logoTextRef.current) {
+            if (!isBreakpointReached && layout === 'collapsed' && !isHovered) {
+                logoTextRef.current?.classList.add('hidden')
+            } else {
+                logoTextRef.current.classList.remove('hidden')
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isHovered, layout, isBreakpointReached])
 
-  return (
-    <div className='flex items-center min-bs-[24px]'>
-      <MaterializeLogo />
-      <LogoText
-        color={color}
-        ref={logoTextRef}
-        isHovered={isHovered}
-        isCollapsed={layout === 'collapsed'}
-        transitionDuration={transitionDuration}
-        isBreakpointReached={isBreakpointReached}
-      >
-        {themeConfig.templateName}
-      </LogoText>
-    </div>
-  )
+    return (
+        <div className='flex items-center min-bs-[24px]'>
+            {/* <MaterializeLogo /> */}
+            <LogoText
+                color={color}
+                ref={logoTextRef}
+                isHovered={isHovered}
+                isCollapsed={layout === 'collapsed'}
+                transitionDuration={transitionDuration}
+                isBreakpointReached={isBreakpointReached}
+            >
+                {themeConfig.templateName}
+            </LogoText>
+        </div>
+    )
 }
 
 export default Logo

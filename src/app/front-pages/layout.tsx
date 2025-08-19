@@ -27,38 +27,38 @@ import '@/app/globals.css'
 import '@assets/iconify-icons/generated-icons.css'
 
 export const metadata = {
-  title: 'Materialize - Material Next.js Admin Template',
-  description: 'Materialize - Material Next.js Admin Template'
+    title: 'machibo',
+    description: 'machibo'
 }
 
 const Layout = async ({ children }: ChildrenType) => {
-  // Vars
-  const systemMode = await getSystemMode()
+    // Vars
+    const systemMode = await getSystemMode()
 
-  return (
-    <html id='__next' suppressHydrationWarning>
-      <body className='flex is-full min-bs-full flex-auto flex-col'>
-        <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
-        <Providers direction='ltr'>
-          <BlankLayout systemMode={systemMode}>
-            <IntersectionProvider>
-              <FrontLayout>
-                {children}
-                <ScrollToTop className='mui-fixed'>
-                  <Button
-                    variant='contained'
-                    className='is-10 bs-10 rounded-full p-0 min-is-0 flex items-center justify-center'
-                  >
-                    <i className='ri-arrow-up-line' />
-                  </Button>
-                </ScrollToTop>
-              </FrontLayout>
-            </IntersectionProvider>
-          </BlankLayout>
-        </Providers>
-      </body>
-    </html>
-  )
+    return (
+        <html id='__next' suppressHydrationWarning>
+            <body className='flex is-full min-bs-full flex-auto flex-col'>
+                <InitColorSchemeScript attribute='data' defaultMode={systemMode} />
+                <Providers direction='ltr'>
+                    <BlankLayout systemMode={systemMode}>
+                        <IntersectionProvider>
+                            <FrontLayout>
+                                {children}
+                                <ScrollToTop className='mui-fixed'>
+                                    <Button
+                                        variant='contained'
+                                        className='is-10 bs-10 rounded-full p-0 min-is-0 flex items-center justify-center'
+                                    >
+                                        <i className='ri-arrow-up-line' />
+                                    </Button>
+                                </ScrollToTop>
+                            </FrontLayout>
+                        </IntersectionProvider>
+                    </BlankLayout>
+                </Providers>
+            </body>
+        </html>
+    )
 }
 
 export default Layout
