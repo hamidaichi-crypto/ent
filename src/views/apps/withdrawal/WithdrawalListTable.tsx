@@ -93,17 +93,34 @@ type PaginationData = {
     total: number
 }
 
-const WithdrawalListTable = ({
-    tableData,
-    paginationData,
-    onPageChange,
-    onRowsPerPageChange
-}: {
+// Define props type including onSearch
+type WithdrawalListTableProps = {
     tableData?: WithdrawalType[]
     paginationData: PaginationData
     onPageChange: (page: number) => void
     onRowsPerPageChange: (perPage: number) => void
-}) => {
+    filters: {
+        status: string[]
+        startDate: string
+        endDate: string
+    }
+    onFilterChange: (newFilters: {
+        status: string[]
+        startDate: string
+        endDate: string
+    }) => void
+    onSearch: () => void // Add onSearch prop
+}
+
+const WithdrawalListTable = ({
+    tableData,
+    paginationData,
+    onPageChange,
+    onRowsPerPageChange,
+    filters,
+    onFilterChange,
+    onSearch // Receive onSearch prop
+}: WithdrawalListTableProps) => {
     // States
     const [rowSelection, setRowSelection] = useState({})
     const [globalFilter, setGlobalFilter] = useState('')
@@ -262,7 +279,8 @@ const WithdrawalListTable = ({
         <>
             <Card>
                 <CardHeader title='Withdrawal List' className='pbe-4' />
-                <TableFilters setData={() => { }} tableData={tableData} /> {/* setData and tableData might need adjustment based on how filters work with external pagination */}
+                {/* Pass onSearch prop to TableFilters */}
+                <TableFilters filters={filters} onFilterChange={onFilterChange} onSearch={onSearch} />
                 <Divider />
                 <div className='flex justify-between gap-4 p-5 flex-col items-start sm:flex-row sm:items-center'>
                     {/* <Button
