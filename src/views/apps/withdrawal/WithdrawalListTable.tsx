@@ -49,6 +49,7 @@ import CustomAvatar from '@core/components/mui/Avatar'
 // Util Imports
 import { getInitials } from '@/utils/getInitials'
 import { getLocalizedUrl } from '@/utils/i18n'
+import { formatDateTime } from '@/utils/dateFormatter'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
@@ -85,11 +86,26 @@ const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
 // Column Definitions
 const columnHelper = createColumnHelper<WithdrawalTypeWithAction>()
 
-const UserListTable = ({ tableData }: { tableData?: WithdrawalType[] }) => {
+type PaginationData = {
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+}
+
+const WithdrawalListTable = ({
+    tableData,
+    paginationData,
+    onPageChange,
+    onRowsPerPageChange
+}: {
+    tableData?: WithdrawalType[]
+    paginationData: PaginationData
+    onPageChange: (page: number) => void
+    onRowsPerPageChange: (perPage: number) => void
+}) => {
     // States
     const [rowSelection, setRowSelection] = useState({})
-    const [data, setData] = useState(...[tableData])
-    const [filteredData, setFilteredData] = useState(data)
     const [globalFilter, setGlobalFilter] = useState('')
 
     // Hooks
@@ -198,34 +214,33 @@ const UserListTable = ({ tableData }: { tableData?: WithdrawalType[] }) => {
             }),
             columnHelper.accessor('created_at', {
                 header: 'Created Time',
-                cell: ({ row }) => <Typography>{row.original.created_at}</Typography>
+                cell: ({ row }) => <Typography>{formatDateTime(row.original.created_at)}</Typography>
             }),
             columnHelper.accessor('updated_at', {
                 header: 'Updated Time',
-                cell: ({ row }) => <Typography>{row.original.updated_at}</Typography>
+                cell: ({ row }) => <Typography>{formatDateTime(row.original.updated_at)}</Typography>
             }),
             columnHelper.accessor('processing_time', {
                 header: 'Processing Time',
-                cell: ({ row }) => <Typography>{row.original.processing_time}</Typography>
+                cell: ({ row }) => <Typography>{formatDateTime(row.original.processing_time)}</Typography>
             }),
         ],
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [data, filteredData]
+        [tableData]
     )
 
     const table = useReactTable({
-        data: filteredData as WithdrawalType[],
+        data: tableData as WithdrawalType[],
         columns,
         filterFns: {
             fuzzy: fuzzyFilter
         },
         state: {
             rowSelection,
-            globalFilter
-        },
-        initialState: {
+            globalFilter,
             pagination: {
-                pageSize: 30
+                pageIndex: paginationData.current_page - 1,
+                pageSize: paginationData.per_page
             }
         },
         enableRowSelection: true, //enable row selection for all rows
@@ -239,24 +254,25 @@ const UserListTable = ({ tableData }: { tableData?: WithdrawalType[] }) => {
         getPaginationRowModel: getPaginationRowModel(),
         getFacetedRowModel: getFacetedRowModel(),
         getFacetedUniqueValues: getFacetedUniqueValues(),
-        getFacetedMinMaxValues: getFacetedMinMaxValues()
+        getFacetedMinMaxValues: getFacetedMinMaxValues(),
+        manualPagination: true // We'll handle pagination ourselves
     })
 
     return (
         <>
             <Card>
-                <CardHeader title='Filters' className='pbe-4' />
-                <TableFilters setData={setFilteredData} tableData={data} />
+                <CardHeader title='Withdrawal List' className='pbe-4' />
+                <TableFilters setData={() => { }} tableData={tableData} /> {/* setData and tableData might need adjustment based on how filters work with external pagination */}
                 <Divider />
                 <div className='flex justify-between gap-4 p-5 flex-col items-start sm:flex-row sm:items-center'>
-                    <Button
+                    {/* <Button
                         color='secondary'
                         variant='outlined'
                         startIcon={<i className='ri-upload-2-line' />}
                         className='max-sm:is-full'
                     >
                         Export
-                    </Button>
+                    </Button> */}
                     <div className='flex items-center gap-x-4 max-sm:gap-y-4 flex-col max-sm:is-full sm:flex-row'>
                         <DialogAddNewWithdrawal />
                     </div>
@@ -290,7 +306,7 @@ const UserListTable = ({ tableData }: { tableData?: WithdrawalType[] }) => {
                                 </tr>
                             ))}
                         </thead>
-                        {table.getFilteredRowModel().rows.length === 0 ? (
+                        {table.getRowModel().rows.length === 0 ? (
                             <tbody>
                                 <tr>
                                     <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
@@ -302,8 +318,7 @@ const UserListTable = ({ tableData }: { tableData?: WithdrawalType[] }) => {
                             <tbody>
                                 {table
                                     .getRowModel()
-                                    .rows.slice(0, table.getState().pagination.pageSize)
-                                    .map(row => {
+                                    .rows.map(row => {
                                         return (
                                             <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
                                                 {row.getVisibleCells().map(cell => (
@@ -320,16 +335,16 @@ const UserListTable = ({ tableData }: { tableData?: WithdrawalType[] }) => {
                     rowsPerPageOptions={[10, 25, 50]}
                     component='div'
                     className='border-bs'
-                    count={table.getFilteredRowModel().rows.length}
-                    rowsPerPage={table.getState().pagination.pageSize}
-                    page={table.getState().pagination.pageIndex}
+                    count={paginationData.total}
+                    rowsPerPage={paginationData.per_page}
+                    page={paginationData.current_page - 1}
                     SelectProps={{
                         inputProps: { 'aria-label': 'rows per page' }
                     }}
                     onPageChange={(_, page) => {
-                        table.setPageIndex(page)
+                        onPageChange(page + 1)
                     }}
-                    onRowsPerPageChange={e => table.setPageSize(Number(e.target.value))}
+                    onRowsPerPageChange={e => onRowsPerPageChange(Number(e.target.value))}
                 />
             </Card>
             {/* <AddUserDrawer
@@ -342,4 +357,4 @@ const UserListTable = ({ tableData }: { tableData?: WithdrawalType[] }) => {
     )
 }
 
-export default UserListTable
+export default WithdrawalListTable

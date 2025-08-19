@@ -14,44 +14,49 @@ import type { MemberType } from '@/types/apps/memberTypes'
 // Component Imports
 import MemberListTable from './MemberListTable'
 
+// Utils Imports
+import { useFetchData } from '@/utils/api'
+
 const MemberList = () => {
     // States
     const [memberData, setMemberData] = useState<MemberType[] | undefined>(undefined)
     const [loading, setLoading] = useState<boolean>(true)
+    const [paginationData, setPaginationData] = useState({
+        current_page: 1,
+        last_page: 1,
+        per_page: 30,
+        total: 0
+    })
+
+    // Hooks
+    const fetchData = useFetchData()
+
+    const fetchMemberData = async (page: number, perPage: number) => {
+        try {
+            setLoading(true)
+            const data = await fetchData(`/members?page=${page}&per_page=${perPage}`)
+            setMemberData(data?.data?.rows)
+            setPaginationData(data?.data?.paginations)
+        } catch (error) {
+            console.error('Failed to fetch member data:', error)
+            setMemberData([]) // Set to empty array on error
+            setPaginationData({ current_page: 1, last_page: 1, per_page: 30, total: 0 })
+        } finally {
+            setLoading(false)
+        }
+    }
 
     useEffect(() => {
-        const getMemberListData = async () => {
-            // Vars
-            const res = await fetch('https://xpi.machibo.com/api/members?page=1', {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'Authorization': 'Bearer 15|PacmxeDeHKdBg43SXxnUeFAGaZBqULLHJ6gOlBRH97d96a2a'
-                }
-            })
+        fetchMemberData(paginationData.current_page, paginationData.per_page)
+    }, []) // Initial fetch
 
-            if (!res.ok) {
-                throw new Error('Failed to fetch member data')
-            }
+    const handlePageChange = (newPage: number) => {
+        fetchMemberData(newPage, paginationData.per_page)
+    }
 
-            return res.json()
-        }
-
-        const fetchData = async () => {
-            try {
-                setLoading(true)
-                const data = await getMemberListData()
-                setMemberData(data?.data?.rows)
-            } catch (error) {
-                console.error('Failed to fetch member data:', error)
-                setMemberData([]) // Set to empty array on error
-            } finally {
-                setLoading(false)
-            }
-        }
-
-        fetchData()
-    }, [])
+    const handleRowsPerPageChange = (newPerPage: number) => {
+        fetchMemberData(1, newPerPage) // Reset to first page when rows per page changes
+    }
 
     if (loading) {
         return (
@@ -64,7 +69,12 @@ const MemberList = () => {
     return (
         <Grid container spacing={6}>
             <Grid size={{ xs: 12 }}>
-                <MemberListTable tableData={memberData} />
+                <MemberListTable
+                    tableData={memberData}
+                    paginationData={paginationData}
+                    onPageChange={handlePageChange}
+                    onRowsPerPageChange={handleRowsPerPageChange}
+                />
             </Grid>
         </Grid>
     )

@@ -53,6 +53,7 @@ import CustomAvatar from '@core/components/mui/Avatar'
 // Util Imports
 import { getInitials } from '@/utils/getInitials'
 import { getLocalizedUrl } from '@/utils/i18n'
+import { formatDateTime } from '@/utils/dateFormatter'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
@@ -141,12 +142,27 @@ const userStatusObj: UserStatusType = {
 // Column Definitions
 const columnHelper = createColumnHelper<MembersTypeWithAction>()
 
-const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
+type PaginationData = {
+    current_page: number
+    last_page: number
+    per_page: number
+    total: number
+}
+
+const MemberListTable = ({
+    tableData,
+    paginationData,
+    onPageChange,
+    onRowsPerPageChange
+}: {
+    tableData?: MemberType[]
+    paginationData: PaginationData
+    onPageChange: (page: number) => void
+    onRowsPerPageChange: (perPage: number) => void
+}) => {
     // States
     const [addUserOpen, setAddUserOpen] = useState(false)
     const [rowSelection, setRowSelection] = useState({})
-    const [data, setData] = useState(...[tableData])
-    const [filteredData, setFilteredData] = useState(data)
     const [globalFilter, setGlobalFilter] = useState('')
 
     // Hooks
@@ -194,9 +210,9 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
                 header: 'Action',
                 cell: ({ row }) => (
                     <div className='flex items-center gap-0.5'>
-                        <IconButton size='small' onClick={() => setData(data?.filter(product => product.id !== row.original.id))}>
+                        {/* <IconButton size='small' onClick={() => setData(data?.filter(product => product.id !== row.original.id))}>
                             <i className='ri-delete-bin-7-line text-textSecondary' />
-                        </IconButton>
+                        </IconButton> */}
                         <IconButton size='small'>
                             <Link href={getLocalizedUrl('/apps/user/view', locale as Locale)} className='flex'>
                                 <i className='ri-eye-line text-textSecondary' />
@@ -245,7 +261,7 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
             }),
             columnHelper.accessor('date_of_birth', {
                 header: 'Birthday',
-                cell: ({ row }) => <Typography>{row.original.date_of_birth}</Typography>
+                cell: ({ row }) => <Typography>{formatDateTime(row.original.date_of_birth)}</Typography>
             }),
             columnHelper.accessor('mobile', {
                 header: 'Mobile No',
@@ -269,7 +285,7 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
             }),
             columnHelper.accessor('registration_created_at', {
                 header: 'Registration Date',
-                cell: ({ row }) => <Typography>{row.original.registration_created_at}</Typography>
+                cell: ({ row }) => <Typography>{formatDateTime(row.original.registration_created_at)}</Typography>
             }),
             columnHelper.accessor('registration_ip', {
                 header: 'Registration IP Address',
@@ -281,22 +297,21 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
             }),
         ],
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [data, filteredData]
+        [tableData]
     )
 
     const table = useReactTable({
-        data: filteredData as MemberType[],
+        data: tableData as MemberType[],
         columns,
         filterFns: {
             fuzzy: fuzzyFilter
         },
         state: {
             rowSelection,
-            globalFilter
-        },
-        initialState: {
+            globalFilter,
             pagination: {
-                pageSize: 30
+                pageIndex: paginationData.current_page - 1,
+                pageSize: paginationData.per_page
             }
         },
         enableRowSelection: true, //enable row selection for all rows
@@ -310,14 +325,15 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
         getPaginationRowModel: getPaginationRowModel(),
         getFacetedRowModel: getFacetedRowModel(),
         getFacetedUniqueValues: getFacetedUniqueValues(),
-        getFacetedMinMaxValues: getFacetedMinMaxValues()
+        getFacetedMinMaxValues: getFacetedMinMaxValues(),
+        manualPagination: true // We'll handle pagination ourselves
     })
 
     return (
         <>
             <Card>
                 <CardHeader title='Filters' className='pbe-4' />
-                <TableFilters setData={setFilteredData} tableData={data} />
+                <TableFilters setData={() => { }} tableData={tableData} /> {/* setData and tableData might need adjustment based on how filters work with external pagination */}
                 <Divider />
                 <div className='flex justify-between gap-4 p-5 flex-col items-start sm:flex-row sm:items-center'>
                     <Button
@@ -369,7 +385,7 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
                                 </tr>
                             ))}
                         </thead>
-                        {table.getFilteredRowModel().rows.length === 0 ? (
+                        {table.getRowModel().rows.length === 0 ? (
                             <tbody>
                                 <tr>
                                     <td colSpan={table.getVisibleFlatColumns().length} className='text-center'>
@@ -381,8 +397,7 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
                             <tbody>
                                 {table
                                     .getRowModel()
-                                    .rows.slice(0, table.getState().pagination.pageSize)
-                                    .map(row => {
+                                    .rows.map(row => {
                                         return (
                                             <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
                                                 {row.getVisibleCells().map(cell => (
@@ -399,20 +414,20 @@ const UserListTable = ({ tableData }: { tableData?: MemberType[] }) => {
                     rowsPerPageOptions={[10, 25, 50]}
                     component='div'
                     className='border-bs'
-                    count={table.getFilteredRowModel().rows.length}
-                    rowsPerPage={table.getState().pagination.pageSize}
-                    page={table.getState().pagination.pageIndex}
+                    count={paginationData.total}
+                    rowsPerPage={paginationData.per_page}
+                    page={paginationData.current_page - 1}
                     SelectProps={{
                         inputProps: { 'aria-label': 'rows per page' }
                     }}
                     onPageChange={(_, page) => {
-                        table.setPageIndex(page)
+                        onPageChange(page + 1)
                     }}
-                    onRowsPerPageChange={e => table.setPageSize(Number(e.target.value))}
+                    onRowsPerPageChange={e => onRowsPerPageChange(Number(e.target.value))}
                 />
             </Card>
         </>
     )
 }
 
-export default UserListTable
+export default MemberListTable
