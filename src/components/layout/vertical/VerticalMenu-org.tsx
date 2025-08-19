@@ -84,13 +84,13 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
                 <SubMenu
                     label={dictionary['navigation'].dashboards}
                     icon={<i className='ri-home-smile-line' />}
-                // suffix={<Chip label='5' size='small' color='error' />}
+                    suffix={<Chip label='5' size='small' color='error' />}
                 >
                     <MenuItem href={`/${locale}/dashboards/crm`}>{dictionary['navigation'].crm}</MenuItem>
-                    {/* <MenuItem href={`/${locale}/dashboards/analytics`}>{dictionary['navigation'].analytics}</MenuItem>
+                    <MenuItem href={`/${locale}/dashboards/analytics`}>{dictionary['navigation'].analytics}</MenuItem>
                     <MenuItem href={`/${locale}/dashboards/ecommerce`}>{dictionary['navigation'].eCommerce}</MenuItem>
                     <MenuItem href={`/${locale}/dashboards/academy`}>{dictionary['navigation'].academy}</MenuItem>
-                    <MenuItem href={`/${locale}/dashboards/logistics`}>{dictionary['navigation'].logistics}</MenuItem> */}
+                    <MenuItem href={`/${locale}/dashboards/logistics`}>{dictionary['navigation'].logistics}</MenuItem>
                 </SubMenu>
                 <MenuSection label="MACHIBET">
                     <SubMenu label={dictionary['navigation'].member} icon={<i className='ri-user-line' />}>
@@ -107,7 +107,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
                         {dictionary['navigation'].withdrawal}
                     </MenuItem>
                 </MenuSection>
-                {/* <MenuSection label={dictionary['navigation'].appsPages}>
+                <MenuSection label={dictionary['navigation'].appsPages}>
                     <SubMenu label={dictionary['navigation'].frontPages} icon={<i className='ri-file-copy-line' />}>
                         <MenuItem href='/front-pages/landing-page' target='_blank'>
                             {dictionary['navigation'].landing}
@@ -311,8 +311,8 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
                         </MenuItem>
                         <MenuItem href={`/${locale}/pages/widget-examples/actions`}>{dictionary['navigation'].actions}</MenuItem>
                     </SubMenu>
-                </MenuSection> */}
-                {/* <MenuSection label={dictionary['navigation'].formsAndTables}>
+                </MenuSection>
+                <MenuSection label={dictionary['navigation'].formsAndTables}>
                     <MenuItem href={`/${locale}/forms/form-layouts`} icon={<i className='ri-layout-4-line' />}>
                         {dictionary['navigation'].formLayouts}
                     </MenuItem>
@@ -341,8 +341,8 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
                     >
                         {dictionary['navigation'].muiTables}
                     </MenuItem>
-                </MenuSection> */}
-                {/* <MenuSection label={dictionary['navigation'].chartsMisc}>
+                </MenuSection>
+                <MenuSection label={dictionary['navigation'].chartsMisc}>
                     <SubMenu label={dictionary['navigation'].charts} icon={<i className='ri-bar-chart-2-line' />}>
                         <MenuItem href={`/${locale}/charts/apex-charts`}>{dictionary['navigation'].apex}</MenuItem>
                         <MenuItem href={`/${locale}/charts/recharts`}>{dictionary['navigation'].recharts}</MenuItem>
@@ -407,7 +407,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
                         </SubMenu>
                         <MenuItem disabled>{dictionary['navigation'].disabledMenu}</MenuItem>
                     </SubMenu>
-                </MenuSection> */}
+                </MenuSection>
             </Menu>
             {/* <Menu
         popoutMenuOffset={{ mainAxis: 17 }}
