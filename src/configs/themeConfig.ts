@@ -51,6 +51,7 @@ export type Config = {
     footer: Footer
     disableRipple: boolean
     toastPosition: ToastPosition
+    disableCustomizer: boolean
 }
 
 const themeConfig: Config = {
@@ -77,7 +78,8 @@ const themeConfig: Config = {
         detached: true //! true, false (This will not work in the Horizontal Layout)
     },
     disableRipple: false, // true, false
-    toastPosition: 'top-right' // 'top-right', 'top-center', 'top-left', 'bottom-right', 'bottom-center', 'bottom-left'
+    toastPosition: 'top-right', // 'top-right', 'top-center', 'top-left', 'bottom-right', 'bottom-center', 'bottom-left'
+    disableCustomizer: true // true, false
 }
 
 export default themeConfig
