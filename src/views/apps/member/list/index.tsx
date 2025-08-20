@@ -68,7 +68,6 @@ const MemberList = () => {
     const fetchData = useFetchData()
 
     const fetchMemberData = async (page: number, perPage: number, currentFilters: typeof filters) => {
-        console.log("fetch member data")
         try {
             setLoading(true)
 
