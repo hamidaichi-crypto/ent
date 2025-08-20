@@ -1,9 +1,7 @@
 'use client'
 
 // React Imports
-import { useEffect, useState, useMemo } from 'react'
-
-// Next Imports
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 
@@ -20,6 +18,9 @@ import IconButton from '@mui/material/IconButton'
 import { styled } from '@mui/material/styles'
 import TablePagination from '@mui/material/TablePagination'
 import type { TextFieldProps } from '@mui/material/TextField'
+import Dialog from '@mui/material/Dialog'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
 
 // Third-party Imports
 import classnames from 'classnames'
@@ -47,13 +48,14 @@ import type { Locale } from '@configs/i18n'
 // Component Imports
 import TableFilters from './TableFilters'
 import AddUserDrawer from './AddUserDrawer'
-import OptionMenu from '@core/components/option-menu'
 import CustomAvatar from '@core/components/mui/Avatar'
+import OptionMenu from '@core/components/option-menu'
 
 // Util Imports
 import { getInitials } from '@/utils/getInitials'
 import { getLocalizedUrl } from '@/utils/i18n'
 import { formatDateTime } from '@/utils/dateFormatter'
+import { useFetchData } from '@/utils/api' // Corrected import for the hook
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
@@ -124,21 +126,6 @@ const DebouncedInput = ({
     return <TextField {...props} value={value} onChange={e => setValue(e.target.value)} size='small' />
 }
 
-// Vars
-const userRoleObj: UserRoleType = {
-    admin: { icon: 'ri-vip-crown-line', color: 'error' },
-    author: { icon: 'ri-computer-line', color: 'warning' },
-    editor: { icon: 'ri-edit-box-line', color: 'info' },
-    maintainer: { icon: 'ri-pie-chart-2-line', color: 'success' },
-    subscriber: { icon: 'ri-user-3-line', color: 'primary' }
-}
-
-const userStatusObj: UserStatusType = {
-    active: 'success',
-    pending: 'warning',
-    inactive: 'secondary'
-}
-
 // Column Definitions
 const columnHelper = createColumnHelper<MembersTypeWithAction>()
 
@@ -148,6 +135,116 @@ type PaginationData = {
     per_page: number
     total: number
 }
+
+// --- User Detail Modal Component ---
+const UserDetailModal = ({
+    username,
+    open,
+    onClose
+}: { username: string | null; open: boolean; onClose: () => void }) => {
+    const [userData, setUserData] = useState<MemberType | null>(null)
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const fetchData = useFetchData()
+
+    // 🗂 Cache user data by username
+    const cacheRef = useRef<Record<string, MemberType>>({})
+
+    // Fetch user details (and update cache)
+    const loadUserData = async (uname: string) => {
+        setLoading(true)
+        setError(null)
+        try {
+            console.log("asdasdadsa")
+            const response = await fetchData(`/members/u/${uname}`)
+            console.log("response")
+            console.log(response)
+            setUserData(response?.data)
+            cacheRef.current[uname] = response // ✅ cache it
+        } catch (err) {
+            console.error('Error fetching user data:', err)
+            setError('Failed to load user data.')
+        } finally {
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        if (!open || !username) return
+
+        // ✅ If cached, use it immediately
+        if (cacheRef.current[username]) {
+            setUserData(cacheRef.current[username])
+            setLoading(false)
+            setError(null)
+        } else {
+            // Otherwise fetch from API
+            loadUserData(username)
+        }
+    }, [username, open])
+
+    // Don’t clear cache on close → only reset modal state
+    useEffect(() => {
+        if (!open) {
+            setError(null)
+            setLoading(false)
+            setUserData(null) // clear local state, but keep cache
+        }
+    }, [open])
+
+    return (
+        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+            <DialogTitle>
+                User Details {username ? `- ${username}` : ''}
+            </DialogTitle>
+            <DialogContent>
+                {loading && <Typography>Loading...</Typography>}
+                {error && <Typography color="error">{error}</Typography>}
+                {userData && (
+                    <>
+                        <Typography variant="h6">Name: {userData.name}</Typography>
+                        <Typography>Username: {userData.username}</Typography>
+                        <Typography>Email: {userData.email}</Typography>
+                        <Typography>Score: {userData.score ?? '-'}</Typography>
+                        <Typography>Grade: {userData.grade ?? '-'}</Typography>
+                        <Typography>
+                            Birthday: {formatDateTime(userData.date_of_birth)}
+                        </Typography>
+                        <Typography>Mobile: {userData.mobile}</Typography>
+                        <Typography>Member Group: {userData.member_group_id}</Typography>
+                        <Typography>Status: {userData.status}</Typography>
+                        <Typography>Refer By: {userData.referrer}</Typography>
+                        <Typography>Remark: {userData.remark ?? '-'}</Typography>
+                        <Typography>
+                            Registration Date:{' '}
+                            {formatDateTime(userData.registration_created_at)}
+                        </Typography>
+                        <Typography>Registration IP: {userData.registration_ip}</Typography>
+                        <Typography>
+                            Registration Domain: {userData.registration_site}
+                        </Typography>
+                    </>
+                )}
+
+                {/* ✅ Refresh button */}
+                {username && (
+                    <Button
+                        onClick={() => loadUserData(username)}
+                        variant="outlined"
+                        className="mt-2 mr-2"
+                    >
+                        Refresh
+                    </Button>
+                )}
+
+                <Button onClick={onClose} variant="contained" className="mt-2">
+                    Close
+                </Button>
+            </DialogContent>
+        </Dialog>
+    )
+}
+
 
 const MemberListTable = ({
     tableData,
@@ -184,48 +281,14 @@ const MemberListTable = ({
     const [addUserOpen, setAddUserOpen] = useState(false)
     const [rowSelection, setRowSelection] = useState({})
     const [globalFilter, setGlobalFilter] = useState('')
+    const [isUserDetailModalOpen, setIsUserDetailModalOpen] = useState(false)
+    const [selectedUsername, setSelectedUsername] = useState<string | null>(null)
 
     // Hooks
     const { lang: locale } = useParams()
 
     const columns = useMemo<ColumnDef<MembersTypeWithAction, any>[]>(
         () => [
-            {
-                id: 'select',
-                header: ({ table }) => (
-                    <Checkbox
-                        {...{
-                            checked: table.getIsAllRowsSelected(),
-                            indeterminate: table.getIsSomeRowsSelected(),
-                            onChange: table.getToggleAllRowsSelectedHandler()
-                        }}
-                    />
-                ),
-                cell: ({ row }) => (
-                    <Checkbox
-                        {...{
-                            checked: row.getIsSelected(),
-                            disabled: !row.getCanSelect(),
-                            indeterminate: row.getIsSomeSelected(),
-                            onChange: row.getToggleSelectedHandler()
-                        }}
-                    />
-                )
-            },
-            //   columnHelper.accessor('fullName', {
-            //     header: 'User',
-            //     cell: ({ row }) => (
-            //       <div className='flex items-center gap-3'>
-            //         {getAvatar({ avatar: row.original.avatar, fullName: row.original.fullName })}
-            //         <div className='flex flex-col'>
-            //           <Typography color='text.primary' className='font-medium'>
-            //             {row.original.fullName}
-            //           </Typography>
-            //           <Typography variant='body2'>{row.original.username}</Typography>
-            //         </div>
-            //       </div>
-            //     )
-            //   }),
             columnHelper.accessor('action', {
                 header: 'Action',
                 cell: ({ row }) => (
@@ -233,12 +296,17 @@ const MemberListTable = ({
                         {/* <IconButton size='small' onClick={() => setData(data?.filter(product => product.id !== row.original.id))}>
                             <i className='ri-delete-bin-7-line text-textSecondary' />
                         </IconButton> */}
-                        <IconButton size='small'>
-                            <Link href={getLocalizedUrl('/apps/user/view', locale as Locale)} className='flex'>
+                        <IconButton size='small' onClick={() => {
+                            setSelectedUsername(row.original.username)
+                            setIsUserDetailModalOpen(true)
+                        }}>
+                            <i className='ri-eye-line text-textSecondary' />
+                            {/* <Link href={getLocalizedUrl('/apps/user/view', locale as Locale)} className='flex'>
                                 <i className='ri-eye-line text-textSecondary' />
-                            </Link>
+                            </Link> */}
+
                         </IconButton>
-                        <OptionMenu
+                        {/* <OptionMenu
                             iconClassName='text-textSecondary'
                             options={[
                                 {
@@ -250,7 +318,7 @@ const MemberListTable = ({
                                     icon: 'ri-edit-box-line'
                                 }
                             ]}
-                        />
+                        /> */}
                     </div>
                 ),
                 enableSorting: false
@@ -261,7 +329,17 @@ const MemberListTable = ({
             }),
             columnHelper.accessor('username', {
                 header: 'User Name',
-                cell: ({ row }) => <Typography>{row.original.username}</Typography>
+                cell: ({ row }) => (
+                    <Typography
+                        className='cursor-pointer'
+                        onClick={() => {
+                            setSelectedUsername(row.original.username)
+                            setIsUserDetailModalOpen(true)
+                        }}
+                    >
+                        {row.original.username}
+                    </Typography>
+                )
             }),
             columnHelper.accessor('score', {
                 header: 'Score',
@@ -317,7 +395,7 @@ const MemberListTable = ({
             }),
         ],
         // eslint-disable-next-line react-hooks/exhaustive-deps
-        [tableData]
+        [tableData, locale, isUserDetailModalOpen, selectedUsername] // Added dependencies for modal state
     )
 
     const table = useReactTable({
@@ -352,10 +430,10 @@ const MemberListTable = ({
     return (
         <>
             <Card>
-                <CardHeader title='Filters' className='pbe-4' />
+                <CardHeader title='Member List' className='pbe-4' />
                 <TableFilters filters={filters} onFilterChange={onFilterChange} onSearch={onSearch} />
                 <Divider />
-                <div className='flex justify-between gap-4 p-5 flex-col items-start sm:flex-row sm:items-center'>
+                {/* <div className='flex justify-between gap-4 p-5 flex-col items-start sm:row-start-center'>
                     <Button
                         color='secondary'
                         variant='outlined'
@@ -375,7 +453,7 @@ const MemberListTable = ({
                             Add New User
                         </Button>
                     </div>
-                </div>
+                </div> */}
                 <div className='overflow-x-auto'>
                     <table className={tableStyles.table}>
                         <thead>
@@ -446,6 +524,14 @@ const MemberListTable = ({
                     onRowsPerPageChange={e => onRowsPerPageChange(Number(e.target.value))}
                 />
             </Card>
+            <UserDetailModal
+                username={selectedUsername}
+                open={isUserDetailModalOpen}
+                onClose={() => {
+                    setIsUserDetailModalOpen(false)
+                    setSelectedUsername(null)
+                }}
+            />
         </>
     )
 }

@@ -68,6 +68,7 @@ const MemberList = () => {
     const fetchData = useFetchData()
 
     const fetchMemberData = async (page: number, perPage: number, currentFilters: typeof filters) => {
+        console.log("fetch member data")
         try {
             setLoading(true)
 
@@ -108,7 +109,9 @@ const MemberList = () => {
     }
 
     useEffect(() => {
+        console.log("use effeasd fetcmamager", triggerFetch)
         if (triggerFetch) {
+            console.log("use triggerFetch triggerFetch")
             fetchMemberData(paginationData.current_page, paginationData.per_page, filters)
             setTriggerFetch(false) // Reset trigger after fetch
         }
