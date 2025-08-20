@@ -288,112 +288,94 @@ const MemberListTable = ({
     const { lang: locale } = useParams()
 
     const columns = useMemo<ColumnDef<MembersTypeWithAction, any>[]>(
-        () => [
-            columnHelper.accessor('action', {
-                header: 'Action',
-                cell: ({ row }) => (
-                    <div className='flex items-center gap-0.5'>
-                        {/* <IconButton size='small' onClick={() => setData(data?.filter(product => product.id !== row.original.id))}>
-                            <i className='ri-delete-bin-7-line text-textSecondary' />
-                        </IconButton> */}
-                        <IconButton size='small' onClick={() => {
-                            setSelectedUsername(row.original.username)
-                            setIsUserDetailModalOpen(true)
-                        }}>
-                            <i className='ri-eye-line text-textSecondary' />
-                            {/* <Link href={getLocalizedUrl('/apps/user/view', locale as Locale)} className='flex'>
-                                <i className='ri-eye-line text-textSecondary' />
-                            </Link> */}
-
-                        </IconButton>
-                        {/* <OptionMenu
-                            iconClassName='text-textSecondary'
-                            options={[
-                                {
-                                    text: 'Download',
-                                    icon: 'ri-download-line'
-                                },
-                                {
-                                    text: 'Edit',
-                                    icon: 'ri-edit-box-line'
-                                }
-                            ]}
-                        /> */}
-                    </div>
-                ),
-                enableSorting: false
-            }),
-            columnHelper.accessor('id', {
-                header: 'Member ID',
-                cell: ({ row }) => <Typography>{row.original.id}</Typography>
-            }),
-            columnHelper.accessor('username', {
-                header: 'User Name',
-                cell: ({ row }) => (
-                    <Typography
-                        className='cursor-pointer'
-                        onClick={() => {
-                            setSelectedUsername(row.original.username)
-                            setIsUserDetailModalOpen(true)
-                        }}
-                    >
-                        {row.original.username}
-                    </Typography>
-                )
-            }),
-            columnHelper.accessor('score', {
-                header: 'Score',
-                cell: ({ row }) => <Typography> - </Typography>
-            }),
-            columnHelper.accessor('grade', {
-                header: 'Grade',
-                cell: ({ row }) => <Typography> - </Typography>
-            }),
-            columnHelper.accessor('name', {
-                header: 'Name',
-                cell: ({ row }) => <Typography>{row.original.name}</Typography>
-            }),
-            columnHelper.accessor('email', {
-                header: 'Email',
-                cell: ({ row }) => <Typography>{row.original.email}</Typography>
-            }),
-            columnHelper.accessor('date_of_birth', {
-                header: 'Birthday',
-                cell: ({ row }) => <Typography>{formatDateTime(row.original.date_of_birth)}</Typography>
-            }),
-            columnHelper.accessor('mobile', {
-                header: 'Mobile No',
-                cell: ({ row }) => <Typography>{row.original.mobile}</Typography>
-            }),
-            columnHelper.accessor('member_group_id', {
-                header: 'Member Group',
-                cell: ({ row }) => <Typography>{row.original.member_group_id}</Typography>
-            }),
-            columnHelper.accessor('status', {
-                header: 'Status',
-                cell: ({ row }) => <Typography>{row.original.status}</Typography>
-            }),
-            columnHelper.accessor('referrer', {
-                header: 'Refer By',
-                cell: ({ row }) => <Typography>{row.original.referrer}</Typography>
-            }),
-            columnHelper.accessor('remark', {
-                header: 'Remark',
-                cell: ({ row }) => <Typography> - </Typography>
-            }),
-            columnHelper.accessor('registration_created_at', {
-                header: 'Registration Date',
-                cell: ({ row }) => <Typography>{formatDateTime(row.original.registration_created_at)}</Typography>
-            }),
-            columnHelper.accessor('registration_ip', {
-                header: 'Registration IP Address',
-                cell: ({ row }) => <Typography>{row.original.registration_ip}</Typography>
-            }),
-            columnHelper.accessor('registration_site', {
+        () => {
+            const registrationDomainColumn = columnHelper.accessor('registration_site', {
                 header: 'Registration Domain',
-                cell: ({ row }) => <Typography>{row.original.registration_site}</Typography>
-            }),
-        ],
+                cell: ({ row }) => <Typography>{row.original.registration_site}</Typography>,
+            });
+
+            const registrationIpColumn = columnHelper.accessor('registration_ip', {
+                header: 'Registration IP Address',
+                cell: ({ row }) => <Typography>{row.original.registration_ip}</Typography>,
+                meta: {
+                    pinned: 'right'
+                }
+            });
+
+            const otherColumns = [
+                columnHelper.accessor('action', {
+                    header: 'Action',
+                    cell: ({ row }) => (
+                        <div className='flex items-center gap-0.5'>
+                            <IconButton size='small' onClick={() => {
+                                setSelectedUsername(row.original.username)
+                                setIsUserDetailModalOpen(true)
+                            }}>
+                                <i className='ri-eye-line text-textSecondary' />
+                            </IconButton>
+                        </div>
+                    ),
+                    enableSorting: false,
+                    meta: {
+                        pinned: 'left'
+                    }
+                }),
+                columnHelper.accessor('id', {
+                    header: 'Member ID',
+                    cell: ({ row }) => <Typography>{row.original.id}</Typography>
+                }),
+                columnHelper.accessor('username', {
+                    header: 'User Name',
+                    cell: ({ row }) => (
+                        <Typography
+                            className='cursor-pointer'
+                            onClick={() => {
+                                setSelectedUsername(row.original.username)
+                                setIsUserDetailModalOpen(true)
+                            }}
+                        >
+                            {row.original.username}
+                        </Typography>
+                    )
+                }),
+                columnHelper.accessor('score', {
+                    header: 'Score',
+                    cell: ({ row }) => <Typography> - </Typography>
+                }),
+                columnHelper.accessor('grade', {
+                }),
+                columnHelper.accessor('mobile', {
+                    header: 'Mobile No',
+                    cell: ({ row }) => <Typography>{row.original.mobile}</Typography>
+                }),
+                columnHelper.accessor('member_group_id', {
+                    header: 'Member Group',
+                    cell: ({ row }) => <Typography>{row.original.member_group_id}</Typography>
+                }),
+                columnHelper.accessor('status', {
+                    header: 'Status',
+                    cell: ({ row }) => <Typography>{row.original.status}</Typography>
+                }),
+                columnHelper.accessor('referrer', {
+                    header: 'Refer By',
+                    cell: ({ row }) => <Typography>{row.original.referrer}</Typography>
+                }),
+                columnHelper.accessor('remark', {
+                    header: 'Remark',
+                    cell: ({ row }) => <Typography> - </Typography>
+                }),
+                columnHelper.accessor('registration_created_at', {
+                    header: 'Registration Date',
+                    cell: ({ row }) => <Typography>{formatDateTime(row.original.registration_created_at)}</Typography>
+                }),
+                columnHelper.accessor('registration_ip', {
+                    header: 'Registration IP Address',
+                    cell: ({ row }) => <Typography>{row.original.registration_ip}</Typography>
+                }),
+            ];
+
+            return [...otherColumns, registrationDomainColumn, registrationIpColumn];
+        },
         // eslint-disable-next-line react-hooks/exhaustive-deps
         [tableData, locale, isUserDetailModalOpen, selectedUsername] // Added dependencies for modal state
     )
