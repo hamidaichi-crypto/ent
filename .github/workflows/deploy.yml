@@ -1,0 +1,30 @@
+name: Deploy Next.js App
+
+on:
+  push:
+    branches:
+      - main  # Trigger on push to main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.7.0
+        with:
+          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+
+      - name: Deploy to Server
+        run: |
+          ssh -o StrictHostKeyChecking=no deploy@3.6.17.4 << 'EOF'
+            cd /var/www/nmcbbo-webapp
+            git fetch --all
+            git reset --hard origin/main
+            npm install --production=false
+            npm run build
+            pm2 reload nmcbbo-webap
+          EOF
