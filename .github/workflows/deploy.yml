@@ -21,6 +21,9 @@ jobs:
       - name: Deploy to Server
         run: |
           ssh -o StrictHostKeyChecking=no deploy@3.6.17.4 << 'EOF'
+             export NVM_DIR="$HOME/.nvm"
+            [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
+            export PATH=$PATH:$(npm bin -g)
             cd /var/www/nmcbbo-webapp
             git fetch --all
             git reset --hard origin/main
