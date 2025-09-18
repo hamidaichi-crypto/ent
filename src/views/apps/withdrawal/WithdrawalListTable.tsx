@@ -1,7 +1,8 @@
 'use client'
 
 // React Imports
-import { useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useCallback, useRef } from 'react'
+
 
 // Next Imports
 import Link from 'next/link'
@@ -40,6 +41,7 @@ import DialogAddNewWithdrawal from './DialogAddNewWithdrawal'
 // Type Imports
 import type { ThemeColor } from '@core/types'
 import type { WithdrawalType } from '@/types/apps/withdrawalTypes'
+import { Transaction } from '@/types/apps/withdrawalTypes'
 import type { Locale } from '@configs/i18n'
 
 // Component Imports
@@ -53,6 +55,16 @@ import { formatDateTime } from '@/utils/dateFormatter'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
+
+import Dialog from '@mui/material/Dialog'
+import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle'
+
+
+import {
+    Tabs, Tab, Box, Grid, Table, TableBody, TableRow, TableCell,
+    Chip, TextField
+} from "@mui/material";
 
 declare module '@tanstack/table-core' {
     interface FilterFns {
@@ -112,6 +124,15 @@ type WithdrawalListTableProps = {
     onSearch: () => void // Add onSearch prop
 }
 
+const getAccountNumber = (accountInfo: string | undefined) => {
+    if (!accountInfo) {
+        return '';
+    }
+    const parts = accountInfo.split(' - ');
+
+    return parts[parts.length - 1].trim();
+}
+
 const WithdrawalListTable = ({
     tableData,
     paginationData,
@@ -125,62 +146,31 @@ const WithdrawalListTable = ({
     const [rowSelection, setRowSelection] = useState({})
     const [globalFilter, setGlobalFilter] = useState('')
 
+    const [isWithdrawDetailModalOpen, setIsWithdrawDetailModalOpen] = useState(false)
+    const [selectedWithdrawal, setSelectedWithdrawal] = useState({})
+
     // Hooks
     const { lang: locale } = useParams()
 
     const columns = useMemo<ColumnDef<WithdrawalTypeWithAction, any>[]>(
         () => [
-            // {
-            //     id: 'select',
-            //     header: ({ table }) => (
-            //         <Checkbox
-            //             {...{
-            //                 checked: table.getIsAllRowsSelected(),
-            //                 indeterminate: table.getIsSomeRowsSelected(),
-            //                 onChange: table.getToggleAllRowsSelectedHandler()
-            //             }}
-            //         />
-            //     ),
-            //     cell: ({ row }) => (
-            //         <Checkbox
-            //             {...{
-            //                 checked: row.getIsSelected(),
-            //                 disabled: !row.getCanSelect(),
-            //                 indeterminate: row.getIsSomeSelected(),
-            //                 onChange: row.getToggleSelectedHandler()
-            //             }}
-            //         />
-            //     )
-            // },
-            // columnHelper.accessor('action', {
-            //     header: 'Action',
-            //     cell: ({ row }) => (
-            //         <div className='flex items-center gap-0.5'>
-            //             {/* <IconButton size='small' onClick={() => setData(data?.filter(product => product.id !== row.original.id))}>
-            //                 <i className='ri-delete-bin-7-line text-textSecondary' />
-            //             </IconButton> */}
-            //             <IconButton size='small'>
-            //                 <Link href={getLocalizedUrl('/apps/user/view', locale as Locale)} className='flex'>
-            //                     <i className='ri-eye-line text-textSecondary' />
-            //                 </Link>
-            //             </IconButton>
-            //             {/* <OptionMenu
-            //                 iconClassName='text-textSecondary'
-            //                 options={[
-            //                     {
-            //                         text: 'Download',
-            //                         icon: 'ri-download-line'
-            //                     },
-            //                     {
-            //                         text: 'Edit',
-            //                         icon: 'ri-edit-box-line'
-            //                     }
-            //                 ]}
-            //             /> */}
-            //         </div>
-            //     ),
-            //     enableSorting: false
-            // }),
+            columnHelper.accessor('action', {
+                header: 'Action',
+                cell: ({ row }) => (
+                    <div className='flex items-center gap-0.5'>
+                        <IconButton size='small' onClick={() => {
+                            setSelectedWithdrawal(row.original)
+                            setIsWithdrawDetailModalOpen(true)
+                        }}>
+                            <i className='ri-eye-line text-textSecondary' />
+                        </IconButton>
+                    </div>
+                ),
+                enableSorting: false,
+                meta: {
+                    pinned: 'left'
+                }
+            }),
             columnHelper.accessor('id', {
                 header: 'ID',
                 cell: ({ row }) => <Typography>{row.original.id}</Typography>
@@ -219,7 +209,7 @@ const WithdrawalListTable = ({
             }),
             columnHelper.accessor('member_bank_account', {
                 header: 'Member Bank Account',
-                cell: ({ row }) => <Typography>{row.original.member_bank_account}</Typography>
+                cell: ({ row }) => <Typography>{getAccountNumber(row.original.member_bank_account)}</Typography>
             }),
             columnHelper.accessor('handler', {
                 header: 'Handler',
@@ -365,6 +355,14 @@ const WithdrawalListTable = ({
                     onRowsPerPageChange={e => onRowsPerPageChange(Number(e.target.value))}
                 />
             </Card>
+            <UserWithdrawalModal
+                withdrawal={selectedWithdrawal}
+                open={isWithdrawDetailModalOpen}
+                onClose={() => {
+                    setIsWithdrawDetailModalOpen(false)
+                    setSelectedWithdrawal({})
+                }}
+            />
             {/* <AddUserDrawer
                 open={addUserOpen}
                 handleClose={() => setAddUserOpen(!addUserOpen)}
@@ -374,5 +372,192 @@ const WithdrawalListTable = ({
         </>
     )
 }
+
+
+// --- User Withdrawal Modal Component ---
+const UserWithdrawalModal = ({
+    withdrawal,
+    open,
+    onClose
+}: { withdrawal: Transaction | null; open: boolean; onClose: () => void }) => {
+    // const [userData, setUserData] = useState<MemberType | null>(null)
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    // const fetchData = useFetchData()
+
+    // 🗂 Cache user data by username
+    const cacheRef = useRef<Record<string, MemberType>>({})
+
+    // Fetch user details (and update cache)
+    // const loadUserData = async (uname: string) => {
+    //     setLoading(true)
+    //     setError(null)
+    //     try {
+    //         const response = await fetchData(`/members/u/${uname}`)
+    //         setUserData(response?.data)
+    //         cacheRef.current[uname] = response // ✅ cache it
+    //     } catch (err) {
+    //         console.error('Error fetching user data:', err)
+    //         setError('Failed to load user data.')
+    //     } finally {
+    //         setLoading(false)
+    //     }
+    // }
+
+    // useEffect(() => {
+    //     if (!open || !username) return
+
+    //     // ✅ If cached, use it immediately
+    //     if (cacheRef.current[username]) {
+    //         setUserData(cacheRef.current[username])
+    //         setLoading(false)
+    //         setError(null)
+    //     } else {
+    //         // Otherwise fetch from API
+    //         loadUserData(username)
+    //     }
+    // }, [username, open])
+
+    // Don’t clear cache on close → only reset modal state
+    useEffect(() => {
+        if (!open) {
+            setError(null)
+            setLoading(false)
+            // setUserData(null) // clear local state, but keep cache
+        }
+    }, [open])
+
+    return (
+        <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+            <DialogTitle>Withdrawal Details</DialogTitle>
+            {withdrawal && (
+                <DialogContent>
+                    {/* Tabs */}
+                    <Tabs value={0}>
+                        <Tab label="Withdrawal Info" />
+                    </Tabs>
+
+                    {/* Member & Bank Info */}
+                    <Grid container spacing={2} sx={{ mt: 2 }}>
+                        <Grid item xs={12} md={6}>
+                            <Box border={1} borderRadius={2} p={2}>
+                                <h4>Member Info</h4>
+                                <Table size="small">
+                                    <TableBody>
+                                        <TableRow>
+                                            <TableCell>Username</TableCell>
+                                            <TableCell>{withdrawal.username}</TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell>Member Group</TableCell>
+                                            <TableCell>{withdrawal.member_group}</TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell>Merchant</TableCell>
+                                            <TableCell>{withdrawal.merchant_name}</TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell>Remarks</TableCell>
+                                            <TableCell>{withdrawal.remarks}</TableCell>
+                                        </TableRow>
+                                    </TableBody>
+                                </Table>
+                            </Box>
+                        </Grid>
+
+                        <Grid item xs={12} md={6}>
+                            <Box border={1} borderRadius={2} p={2}>
+                                <h4>Bank Info</h4>
+                                <Table size="small">
+                                    <TableBody>
+                                        <TableRow>
+                                            <TableCell>Bank Name</TableCell>
+                                            <TableCell>{withdrawal.member_bank}</TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell>Account Name</TableCell>
+                                            <TableCell>{withdrawal.name}</TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell>Account Number</TableCell>
+                                            <TableCell>{getAccountNumber(withdrawal.member_bank_account)}</TableCell>
+                                        </TableRow>
+                                        <TableRow>
+                                            <TableCell>Remarks</TableCell>
+                                            <TableCell>-</TableCell>
+                                        </TableRow>
+                                    </TableBody>
+                                </Table>
+                            </Box>
+                        </Grid>
+                    </Grid>
+
+                    {/* Transaction Info */}
+                    <Box border={1} borderRadius={2} p={2} mt={3}>
+                        <h4>Transaction Info</h4>
+                        <Table size="small">
+                            <TableBody>
+                                <TableRow>
+                                    <TableCell>ID</TableCell>
+                                    <TableCell>W{withdrawal.id}</TableCell>
+                                    <TableCell>Created At</TableCell>
+                                    <TableCell>{formatDateTime(withdrawal.created_at)}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell>Status</TableCell>
+                                    <TableCell>
+                                        <Chip label={withdrawal.status_name} color="success" />
+                                    </TableCell>
+                                    <TableCell>Confirmed Amount</TableCell>
+                                    <TableCell>{withdrawal.confirmed_amount}</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell>Processing Date</TableCell>
+                                    <TableCell>{formatDateTime(withdrawal.processing_time)}</TableCell>
+                                    <TableCell>Handler</TableCell>
+                                    <TableCell>{withdrawal.approved_by}</TableCell>
+                                </TableRow>
+                            </TableBody>
+                        </Table>
+
+                        <Box mt={2}>
+                            <TextField
+                                label="Remark"
+                                variant="outlined"
+                                fullWidth
+                                size="small"
+                            />
+                            <Button
+                                variant="contained"
+                                color="primary"
+                                sx={{ mt: 2 }}
+                            >
+                                Update
+                            </Button>
+                        </Box>
+                    </Box>
+                </DialogContent>
+            )}
+        </Dialog>
+        // <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
+        //     <DialogTitle>
+        //         {withdrawal && (<> </>)}
+        //         {/* User Details {username ? `- ${username}` : ''} */}
+        //     </DialogTitle>
+        //     <DialogContent>
+        //         {loading && <Typography>Loading...</Typography>}
+        //         {error && <Typography color="error">{error}</Typography>}
+        //         {withdrawal && (
+        //             <>
+        //             </>
+        //         )}
+        //         <Button onClick={onClose} variant="contained" className="mt-2">
+        //             Close
+        //         </Button>
+        //     </DialogContent>
+        // </Dialog>
+    )
+}
+
 
 export default WithdrawalListTable

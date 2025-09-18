@@ -53,3 +53,60 @@ export type WithdrawalType = {
 
     //   avatarColor?: ThemeColor
 }
+
+
+export interface BankTransaction {
+    merchant_bank_id: number;
+    merchant_bank: string;
+    merchant_bank_account: string;
+    // add other nested fields if needed
+}
+
+export interface Transaction {
+    id: number;
+    amount: string;
+    approved_at: string;
+    approved_by: string;
+    auto_deposit_flag: number;
+    bank_transactions: BankTransaction[];
+    bo_user_id: number;
+    color: string;
+    confirmed_amount: string;
+    cr_amount: string;
+    cr_confirmed_amount: string;
+    cr_exchange_rate: number | null;
+    cr_member_processing_fee: string;
+    cr_processing_fee: string;
+    created_at: string;
+    created_by: string;
+    crypto_wallet_address: string;
+    crypto_wallet_nickname: string;
+    currency: string;
+    dummy: number;
+    ifsc: string | null;
+    is_crypto: number;
+    member_bank: string;
+    member_bank_account: string;
+    member_group: string;
+    member_id: number;
+    member_processing_fee: string;
+    merchant_name: string;
+    mobile_number: string;
+    name: string;
+    network: string | null;
+    payment_gateway: string | null;
+    payment_method: string;
+    processing_fee: string;
+    processing_time: string;
+    remarks: string | null;
+    site_id: number;
+    status: number;
+    status_name: string;
+    suspicious: number;
+    token: string | null;
+    unusual_callback: number;
+    updated_at: string;
+    updated_by: string;
+    username: string;
+}
+
