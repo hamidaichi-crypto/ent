@@ -147,7 +147,7 @@ const WithdrawalListTable = ({
     const [globalFilter, setGlobalFilter] = useState('')
 
     const [isWithdrawDetailModalOpen, setIsWithdrawDetailModalOpen] = useState(false)
-    const [selectedWithdrawal, setSelectedWithdrawal] = useState({})
+    const [selectedWithdrawal, setSelectedWithdrawal] = useState<WithdrawalTypeWithAction | null>(null)
 
     // Hooks
     const { lang: locale } = useParams()
@@ -360,7 +360,7 @@ const WithdrawalListTable = ({
                 open={isWithdrawDetailModalOpen}
                 onClose={() => {
                     setIsWithdrawDetailModalOpen(false)
-                    setSelectedWithdrawal({})
+                    setSelectedWithdrawal(null)
                 }}
             />
             {/* <AddUserDrawer
@@ -379,14 +379,14 @@ const UserWithdrawalModal = ({
     withdrawal,
     open,
     onClose
-}: { withdrawal: Transaction | null; open: boolean; onClose: () => void }) => {
+}: { withdrawal: WithdrawalTypeWithAction | null; open: boolean; onClose: () => void }) => {
     // const [userData, setUserData] = useState<MemberType | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
     // const fetchData = useFetchData()
 
     // 🗂 Cache user data by username
-    const cacheRef = useRef<Record<string, MemberType>>({})
+    // const cacheRef = useRef<Record<string, MemberType>>({})
 
     // Fetch user details (and update cache)
     // const loadUserData = async (uname: string) => {
