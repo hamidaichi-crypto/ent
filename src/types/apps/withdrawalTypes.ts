@@ -59,6 +59,7 @@ export interface BankTransaction {
     merchant_bank_id: number;
     merchant_bank: string;
     merchant_bank_account: string;
+    processing_fee: string;
     // add other nested fields if needed
 }
 
