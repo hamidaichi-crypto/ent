@@ -62,9 +62,11 @@ const WithdrawalList = () => {
     // Hooks
     const fetchData = useFetchData()
 
-    const fetchWithdrawalData = async (page: number, perPage: number, currentFilters: typeof filters) => {
+    const fetchWithdrawalData = async (page: number, perPage: number, currentFilters: typeof filters, showSpinner = true) => {
         try {
-            setLoading(true)
+            if (showSpinner) {
+                setLoading(true)
+            }
             let queryString = `/withdrawals?page=${page}&per_page=${perPage}`
 
             currentFilters.status.forEach((s, index) => {
@@ -85,7 +87,9 @@ const WithdrawalList = () => {
             setWithdrawalData([]) // Set to empty array on error
             setPaginationData({ current_page: 1, last_page: 1, per_page: 30, total: 0 })
         } finally {
-            setLoading(false)
+            if (showSpinner) {
+                setLoading(false)
+            }
         }
     }
 
@@ -121,8 +125,14 @@ const WithdrawalList = () => {
 
     // Handler for the search button
     const handleSearch = () => {
+        // For auto-refresh, call fetch directly without the spinner
+        fetchWithdrawalData(paginationData.current_page, paginationData.per_page, filters, false)
+    }
+
+    // Handler for manual search from filters
+    const handleManualSearch = () => {
         setTriggerFetch(true)
-        setPaginationData(prev => ({ ...prev, current_page: 1 })) // Reset to first page on search
+        setPaginationData(prev => ({ ...prev, current_page: 1 }))
     }
 
     if (loading) {
@@ -136,11 +146,6 @@ const WithdrawalList = () => {
     return (
         <Grid container spacing={6}>
             <Grid size={{ xs: 12 }}>
-                {/* <TableFilters
-                    filters={filters}
-                    onFilterChange={handleFilterChange}
-                    onSearch={handleSearch} // Pass the search handler
-                /> */}
                 <WithdrawalListTable
                     tableData={withdrawalData}
                     paginationData={paginationData}
@@ -148,7 +153,8 @@ const WithdrawalList = () => {
                     onRowsPerPageChange={handleRowsPerPageChange}
                     filters={filters}
                     onFilterChange={handleFilterChange}
-                    onSearch={handleSearch} // Pass handleSearch to WithdrawalListTable
+                    onSearch={handleSearch} // Pass the background search handler to the table
+                    onManualSearch={handleManualSearch} // Pass manual search handler
                 />
             </Grid>
         </Grid>

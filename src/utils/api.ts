@@ -1,15 +1,15 @@
 'use client'
 
-import { useSession, signOut } from 'next-auth/react';
-import { useEffect, useState } from 'react';
+import { useSession, signOut } from 'next-auth/react'
+import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 
 const BASE_URL = 'https://xpi.machibo.com/api'
 
 export const useFetchData = () => {
-    const { data: session, status } = useSession();
-    const [accessToken, setAccessToken] = useState<string | null>(null);
-
-
+    const { data: session, status } = useSession()
+    const [accessToken, setAccessToken] = useState<string | null>(null)
+    const router = useRouter()
 
     useEffect(() => {
         // If session is authenticated and has accessToken, store it in localStorage and state
@@ -19,8 +19,9 @@ export const useFetchData = () => {
         }
         // If session is unauthenticated, clear localStorage and state
         else if (status === 'unauthenticated') {
-            localStorage.removeItem('accessToken'); // Clear localStorage
-            setAccessToken(null);
+            localStorage.removeItem('accessToken') // Clear localStorage
+            setAccessToken(null)
+            router.push('/login') // Redirect to login page
         }
         // If status is loading or null/undefined, try to get token from localStorage
         else if (!status || status === 'loading') {
@@ -32,7 +33,7 @@ export const useFetchData = () => {
                 setAccessToken(null);
             }
         }
-    }, [session, status]); // Re-run effect if session or status changes
+    }, [session, status, router]); // Re-run effect if session, status, or router changes
 
     // Only return fetchData if the session is authenticated AND we have a valid accessToken
     // The check for !accessToken is crucial here.

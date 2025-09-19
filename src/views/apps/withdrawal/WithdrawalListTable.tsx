@@ -37,10 +37,12 @@ import {
 import type { ColumnDef, FilterFn } from '@tanstack/react-table'
 import type { RankingInfo } from '@tanstack/match-sorter-utils'
 import DialogAddNewWithdrawal from './DialogAddNewWithdrawal'
+import { useForm, Controller } from 'react-hook-form'
+import FormHelperText from '@mui/material/FormHelperText'
 
 // Type Imports
 import type { ThemeColor } from '@core/types'
-import type { WithdrawalType } from '@/types/apps/withdrawalTypes'
+import type { WithdrawalType, BankTransaction } from '@/types/apps/withdrawalTypes'
 import { Transaction } from '@/types/apps/withdrawalTypes'
 import type { Locale } from '@configs/i18n'
 
@@ -52,6 +54,7 @@ import CustomAvatar from '@core/components/mui/Avatar'
 import { getInitials } from '@/utils/getInitials'
 import { getLocalizedUrl } from '@/utils/i18n'
 import { formatDateTime } from '@/utils/dateFormatter'
+import { useFetchData } from '@/utils/api'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
@@ -63,7 +66,7 @@ import DialogTitle from '@mui/material/DialogTitle'
 
 import {
     Tabs, Tab, Box, Grid, Table, TableBody, TableRow, TableCell,
-    Chip, TextField
+    Chip, TextField, TableHead, Select, MenuItem, FormControl
 } from "@mui/material";
 
 declare module '@tanstack/table-core' {
@@ -121,7 +124,8 @@ type WithdrawalListTableProps = {
         startDate: string
         endDate: string
     }) => void
-    onSearch: () => void // Add onSearch prop
+    onSearch: () => void
+    onManualSearch: () => void
 }
 
 const getAccountNumber = (accountInfo: string | undefined) => {
@@ -140,7 +144,8 @@ const WithdrawalListTable = ({
     onRowsPerPageChange,
     filters,
     onFilterChange,
-    onSearch // Receive onSearch prop
+    onSearch,
+    onManualSearch
 }: WithdrawalListTableProps) => {
     // States
     const [rowSelection, setRowSelection] = useState({})
@@ -151,6 +156,17 @@ const WithdrawalListTable = ({
 
     // Hooks
     const { lang: locale } = useParams()
+
+    // Auto-refresh data every 1 minute
+    useEffect(() => {
+        const interval = setInterval(() => {
+            // This function is passed from the parent and should trigger a data refetch.
+            onSearch()
+        }, 60000) // 60000 milliseconds = 1 minute. I've set it back to 1 minute.
+
+        // Cleanup function to clear the interval when the component unmounts
+        return () => clearInterval(interval)
+    }, [onSearch]) // Dependency array ensures the effect is re-run if onSearch changes
 
     const columns = useMemo<ColumnDef<WithdrawalTypeWithAction, any>[]>(
         () => [
@@ -269,8 +285,8 @@ const WithdrawalListTable = ({
         <>
             <Card>
                 <CardHeader title='Withdrawal List' className='pbe-4' />
-                {/* Pass onSearch prop to TableFilters */}
-                <TableFilters filters={filters} onFilterChange={onFilterChange} onSearch={onSearch} />
+                {/* Pass onManualSearch prop to TableFilters */}
+                <TableFilters filters={filters} onFilterChange={onFilterChange} onSearch={onManualSearch} />
                 <Divider />
                 <div className='flex justify-between gap-4 p-5 flex-col items-start sm:flex-row sm:items-center'>
                     {/* <Button
@@ -383,6 +399,67 @@ const UserWithdrawalModal = ({
     // const [userData, setUserData] = useState<MemberType | null>(null)
     const [loading, setLoading] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [bankList, setBankList] = useState<{ id: number; name: string }[]>([])
+
+    const {
+        control,
+        handleSubmit,
+        reset,
+        formState: { errors }
+    } = useForm({
+        defaultValues: {
+            bank_id: null,
+            amount: '',
+            fee_total: 0,
+            feeCompany: '',
+            feePlayer: '',
+            receipt: null
+        }
+    });
+
+    const [transactionRow, setTransactionRow] = useState<any>(null);
+    const [transactions, setTransactions] = useState<BankTransaction[]>([]);
+
+    const fetchData = useFetchData()
+
+    // Fetch bank list when the modal opens
+    const loadBankList = async () => {
+        try {
+            const response = await fetchData('/system/withdrawal_banks') // Assuming '/banks' is your API endpoint
+
+            if (response && response.data) {
+                console.log("response", response)
+                setBankList(response.data?.banks)
+            } else {
+                setBankList([])
+            }
+        } catch (err) {
+            console.error('Error fetching bank list:', err)
+            setError('Failed to load bank list.')
+        }
+    }
+
+
+    const handleAddTransaction = () => {
+        setTransactionRow({}); // Use an empty object to indicate the form is open
+        reset({ bank_id: null, amount: '', fee_total: 0, feeCompany: '', feePlayer: '', receipt: null });
+    };
+
+    const onApproveSubmit = (data: any) => {
+        const selectedBank = bankList.find(bank => bank.id === data.bank_id);
+        const newTransaction = {
+            ...data,
+            merchant_bank_account: selectedBank ? selectedBank.name : ''
+        };
+        setTransactions(prev => [newTransaction, ...prev]);
+        setTransactionRow(null);
+        reset();
+    };
+
+    const handleRemove = () => {
+        setTransactionRow(null);
+        reset();
+    };
     // const fetchData = useFetchData()
 
     // 🗂 Cache user data by username
@@ -425,10 +502,21 @@ const UserWithdrawalModal = ({
             setLoading(false)
             // setUserData(null) // clear local state, but keep cache
         }
+
+        if (open && withdrawal?.bank_transactions) {
+            // Initialize transactions with data from the withdrawal prop
+            setTransactions(withdrawal.bank_transactions);
+        }
+
+        if (open) {
+            // Fetch the list of banks when the modal is opened
+            loadBankList()
+            setTransactionRow(null); // Ensure form is hidden on open
+        }
     }, [open])
 
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="md">
+        <Dialog open={open} onClose={onClose} fullWidth maxWidth="xl">
             <DialogTitle>Withdrawal Details</DialogTitle>
             {withdrawal && (
                 <DialogContent>
@@ -535,6 +623,270 @@ const UserWithdrawalModal = ({
                                 Update
                             </Button>
                         </Box>
+                    </Box>
+
+                    {/* --- Bank Transaction Section --- */}
+                    <Box border={1} borderRadius={2} p={2} mt={3}>
+                        <h4>Bank Transaction</h4>
+
+                        <Button
+                            variant="contained"
+                            color="primary"
+                            disabled={!!transactionRow} // disable when editing
+                            onClick={handleAddTransaction}
+                            sx={{ mb: 2 }}
+                        >
+                            Add Transaction
+                        </Button>
+
+                        {/* Input Row (only if Add Transaction clicked) */}
+                        {transactionRow && (
+                            <form onSubmit={handleSubmit(onApproveSubmit)}>
+                                <Box display="flex" gap={2} alignItems="flex-start" mb={2}>
+                                    {/* Merchant Bank */}
+                                    <FormControl fullWidth error={!!errors.bank_id}>
+                                        <Controller
+                                            name="bank_id"
+                                            control={control}
+                                            rules={{ required: true }}
+                                            render={({ field }) => (
+                                                <Select
+                                                    {...field}
+                                                    displayEmpty
+                                                    sx={{ minWidth: 150 }}
+                                                    value={field.value || ''}
+                                                >
+                                                    <MenuItem value="">Please Select</MenuItem>
+                                                    {bankList.map((bank) => (
+                                                        <MenuItem key={bank.id} value={bank.id}>{bank.name}</MenuItem>
+                                                    ))}
+                                                </Select>
+                                            )}
+                                        />
+                                        {errors.bank_id && <FormHelperText error>Please select a bank.</FormHelperText>}
+                                    </FormControl>
+
+                                    {/* Amount */}
+                                    <Controller
+                                        name="amount"
+                                        control={control}
+                                        rules={{ required: true, min: 0.01 }}
+                                        render={({ field }) => (
+                                            <TextField
+                                                {...field}
+                                                label="Amount"
+                                                type="number"
+                                                {...(errors.amount
+                                                    ? {
+                                                        error: true,
+                                                        helperText: errors.amount.type === 'min' ? 'Amount must be greater than 0.' : 'This field is required.'
+                                                    }
+                                                    : {})}
+                                            />
+                                        )}
+                                    />
+
+                                    {/* Processing Fees */}
+                                    <Controller
+                                        name="fee_total"
+                                        control={control}
+                                        rules={{ min: 0 }}
+                                        render={({ field }) => (
+                                            <TextField
+                                                {...field}
+                                                label="Fee Total"
+                                                type="number"
+                                                {...(errors.fee_total && { error: true, helperText: 'Fee Total cannot be negative.' })}
+                                            />
+                                        )}
+                                    />
+                                    <Controller
+                                        name="feeCompany"
+                                        control={control}
+                                        rules={{ required: true, min: 0.01 }}
+                                        render={({ field }) => (
+                                            <TextField
+                                                {...field}
+                                                label="Fee Company"
+                                                type="number"
+                                                {...(errors.feeCompany
+                                                    ? {
+                                                        error: true,
+                                                        helperText:
+                                                            errors.feeCompany.type === 'min'
+                                                                ? 'Fee Company must be greater than 0.'
+                                                                : 'This field is required.'
+                                                    }
+                                                    : {})}
+                                            />
+                                        )}
+                                    />
+                                    <Controller
+                                        name="feePlayer"
+                                        control={control}
+                                        rules={{ required: true, min: 0.01 }}
+                                        render={({ field }) => (
+                                            <TextField
+                                                {...field}
+                                                label="Fee Player"
+                                                type="number"
+                                                {...(errors.feePlayer
+                                                    ? {
+                                                        error: true,
+                                                        helperText:
+                                                            errors.feePlayer.type === 'min'
+                                                                ? 'Fee Player must be greater than 0.'
+                                                                : 'This field is required.'
+                                                    }
+                                                    : {})}
+                                            />
+                                        )}
+                                    />
+
+                                    {/* Receipt */}
+                                    <Button variant="outlined" component="label">
+                                        Upload Receipt
+                                        <Controller
+                                            name="receipt"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <input
+                                                    type="file"
+                                                    hidden
+                                                    onChange={(e) => field.onChange(e.target.files ? e.target.files[0] : null)}
+                                                />
+                                            )}
+                                        />
+                                    </Button>
+
+                                    {/* Actions */}
+                                    <Button variant="contained" color="success" type="submit">
+                                        Approve
+                                    </Button>
+                                    <Button variant="contained" color="warning" onClick={handleRemove}>
+                                        Remove
+                                    </Button>
+                                </Box>
+                            </form>
+                        )}
+
+                        {/* Transaction Table */}
+                        <Table size="small">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>ID</TableCell>
+                                    <TableCell>Bank</TableCell>
+                                    <TableCell>Amount</TableCell>
+                                    <TableCell>Processing Fee</TableCell>
+                                    <TableCell>Confirmed Amount</TableCell>
+                                    <TableCell>Receipt</TableCell>
+                                    <TableCell>Status</TableCell>
+                                    <TableCell>References</TableCell>
+                                    <TableCell>Remarks</TableCell>
+                                    <TableCell>Created By</TableCell>
+                                    <TableCell>Updated By</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {transactions.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={11} align="center">
+                                            No data available
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    transactions.map((t, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell>{index + 1}</TableCell>
+                                            <TableCell>{t.merchant_bank_account}</TableCell>
+                                            <TableCell>{withdrawal.amount}</TableCell>
+                                            <TableCell>
+                                                <Box display="flex" flexDirection="column">
+                                                    <Box display="flex" justifyContent="space-between">
+                                                        <strong>Player:</strong>
+                                                        <span>{withdrawal.member_processing_fee}</span>
+                                                    </Box>
+                                                    <Box display="flex" justifyContent="space-between">
+                                                        <span>Company:</span>
+                                                        <span>{withdrawal.processing_fee}</span>
+                                                    </Box>
+                                                    <Box display="flex" justifyContent="space-between">
+                                                        <span>Total:</span>
+                                                        <span>
+                                                            {(
+                                                                parseFloat(withdrawal.processing_fee || "0") +
+                                                                parseFloat(withdrawal.member_processing_fee || "0")
+                                                            ).toFixed(2)}
+                                                        </span>
+                                                    </Box>
+                                                </Box>
+
+                                            </TableCell>
+                                            <TableCell>{withdrawal.confirmed_amount}</TableCell>
+                                            <TableCell>-</TableCell>
+                                            <TableCell>{withdrawal.status_name}</TableCell>
+                                            <TableCell>-</TableCell>
+                                            <TableCell>-</TableCell>
+                                            <TableCell>-</TableCell>
+                                            <TableCell>-</TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </Box>
+
+                    <Box border={1} borderRadius={2} p={2} mt={3}>
+                        <h4>Past Transactions</h4>
+                        <Table size="small">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>Refer ID</TableCell>
+                                    <TableCell>Transaction Type</TableCell>
+                                    <TableCell>Amount</TableCell>
+                                    <TableCell>References</TableCell>
+                                    <TableCell>Remarks</TableCell>
+                                    <TableCell>Created By</TableCell>
+                                    <TableCell>Updated By</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {/* Example rows */}
+                                {/* <TableRow>
+                                    <TableCell>345659</TableCell>
+                                    <TableCell>Withdrawal</TableCell>
+                                    <TableCell sx={{ color: "red" }}>-600.00</TableCell>
+                                    <TableCell>-</TableCell>
+                                    <TableCell>-</TableCell>
+                                    <TableCell>kumar775<br />2025-09-19 09:25</TableCell>
+                                    <TableCell>rlee6988<br />2025-09-19 09:25</TableCell>
+                                </TableRow>
+                                <TableRow>
+                                    <TableCell>1539435</TableCell>
+                                    <TableCell>Deposit</TableCell>
+                                    <TableCell sx={{ color: "green" }}>300.00</TableCell>
+                                    <TableCell>DepSL-ap6-9-141531-20250918151011</TableCell>
+                                    <TableCell>-</TableCell>
+                                    <TableCell>kumar775<br />2025-09-18 23:10</TableCell>
+                                    <TableCell>-<br />2025-09-18 23:11</TableCell>
+                                </TableRow> */}
+                                <TableRow>
+                                    <TableCell colSpan={6} align="center">
+                                        No data available
+                                    </TableCell>
+
+                                </TableRow>
+
+                                {/* If no data */}
+                                {/* 
+        <TableRow>
+          <TableCell colSpan={7} align="center">
+            No past transactions
+          </TableCell>
+        </TableRow>
+        */}
+                            </TableBody>
+                        </Table>
                     </Box>
                 </DialogContent>
             )}
