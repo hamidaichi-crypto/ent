@@ -74,3 +74,54 @@ export const useFetchData = () => {
 
     return fetchData
 }
+
+export const usePostData = () => {
+    const { data: session, status } = useSession()
+    const [accessToken, setAccessToken] = useState<string | null>(null)
+    const router = useRouter()
+
+    useEffect(() => {
+        if (status === 'authenticated' && session?.user?.accessToken) {
+            localStorage.setItem('accessToken', session.user.accessToken)
+            setAccessToken(session.user.accessToken)
+        } else if (status === 'unauthenticated') {
+            localStorage.removeItem('accessToken')
+            setAccessToken(null)
+            router.push('/login')
+        } else if (!status || status === 'loading') {
+            const storedToken = localStorage.getItem('accessToken')
+
+            if (storedToken) {
+                setAccessToken(storedToken)
+            } else {
+                setAccessToken(null)
+            }
+        }
+    }, [session, status, router])
+
+    const postData = async (endpoint: string, body: any) => {
+        const AUTH_TOKEN = `Bearer ${accessToken}`
+
+        console.log("URL", `${BASE_URL}${endpoint}`)
+        console.log("JSON.stringify(body)", JSON.stringify(body))
+
+        const res = await fetch(`${BASE_URL}${endpoint}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'Authorization': AUTH_TOKEN
+            },
+            body: JSON.stringify(body)
+        })
+
+        if (!res.ok) {
+            const errorData = await res.json().catch(() => ({ message: `HTTP error! status: ${res.status}` }))
+            throw new Error(errorData.message || `Failed to post data to ${endpoint}`)
+        }
+
+        return res.json()
+    }
+
+    return postData
+}

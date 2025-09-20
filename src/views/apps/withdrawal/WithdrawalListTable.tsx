@@ -54,7 +54,7 @@ import CustomAvatar from '@core/components/mui/Avatar'
 import { getInitials } from '@/utils/getInitials'
 import { getLocalizedUrl } from '@/utils/i18n'
 import { formatDateTime } from '@/utils/dateFormatter'
-import { useFetchData } from '@/utils/api'
+import { useFetchData, usePostData } from '@/utils/api'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
@@ -62,6 +62,7 @@ import tableStyles from '@core/styles/table.module.css'
 import Dialog from '@mui/material/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
+import DialogActions from "@mui/material/DialogActions";
 
 
 import {
@@ -420,6 +421,7 @@ const UserWithdrawalModal = ({
     const [transactionRow, setTransactionRow] = useState<any>(null);
     const [transactions, setTransactions] = useState<BankTransaction[]>([]);
 
+    const postData = usePostData()
     const fetchData = useFetchData()
 
     // Fetch bank list when the modal opens
@@ -460,42 +462,7 @@ const UserWithdrawalModal = ({
         setTransactionRow(null);
         reset();
     };
-    // const fetchData = useFetchData()
 
-    // 🗂 Cache user data by username
-    // const cacheRef = useRef<Record<string, MemberType>>({})
-
-    // Fetch user details (and update cache)
-    // const loadUserData = async (uname: string) => {
-    //     setLoading(true)
-    //     setError(null)
-    //     try {
-    //         const response = await fetchData(`/members/u/${uname}`)
-    //         setUserData(response?.data)
-    //         cacheRef.current[uname] = response // ✅ cache it
-    //     } catch (err) {
-    //         console.error('Error fetching user data:', err)
-    //         setError('Failed to load user data.')
-    //     } finally {
-    //         setLoading(false)
-    //     }
-    // }
-
-    // useEffect(() => {
-    //     if (!open || !username) return
-
-    //     // ✅ If cached, use it immediately
-    //     if (cacheRef.current[username]) {
-    //         setUserData(cacheRef.current[username])
-    //         setLoading(false)
-    //         setError(null)
-    //     } else {
-    //         // Otherwise fetch from API
-    //         loadUserData(username)
-    //     }
-    // }, [username, open])
-
-    // Don’t clear cache on close → only reset modal state
     useEffect(() => {
         if (!open) {
             setError(null)
@@ -515,344 +482,377 @@ const UserWithdrawalModal = ({
         }
     }, [open])
 
+
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [rejectionRemark, setRejectionRemark] = useState('');
+    const handleReject = async () => {
+        if (!withdrawal) {
+            setError('Withdrawal data is not available.');
+            return;
+        }
+
+        try {
+            const body = {
+                withdraw_id: withdrawal.id,
+                amount: withdrawal.amount,
+                member_account_id: withdrawal.member_id,
+                // Assuming bank_account_id and merchant_bank_id are available on withdrawal
+                // If not, you might need to adjust where these values come from.
+                // For now, I'll use placeholder values or existing ones.
+                bank_account_id: withdrawal.member_id, // Placeholder, adjust as needed
+                merchant_bank_id: 0, // Placeholder, adjust as needed
+                remarks: rejectionRemark || "Rejected by user" // Use remark from state
+            };
+
+            await postData(`/withdrawals/${withdrawal.id}/reject`, body);
+
+            setConfirmOpen(false);
+            onClose(); // close main modal
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An unknown error occurred');
+        }
+    };
+
     return (
-        <Dialog open={open} onClose={onClose} fullWidth maxWidth="xl">
-            <DialogTitle>Withdrawal Details</DialogTitle>
-            {withdrawal && (
-                <DialogContent>
-                    {/* Tabs */}
-                    <Tabs value={0}>
-                        <Tab label="Withdrawal Info" />
-                    </Tabs>
+        <>
+            <Dialog open={open} onClose={onClose} fullWidth maxWidth="xl">
+                <DialogTitle>Withdrawal Details</DialogTitle>
+                {withdrawal && (
+                    <>
+                        <DialogContent>
+                            {/* Tabs */}
+                            <Tabs value={0}>
+                                <Tab label="Withdrawal Info" />
+                            </Tabs>
 
-                    {/* Member & Bank Info */}
-                    <Grid container spacing={2} sx={{ mt: 2 }}>
-                        <Grid item xs={12} md={6}>
-                            <Box border={1} borderRadius={2} p={2}>
-                                <h4>Member Info</h4>
+                            {/* Member & Bank Info */}
+                            <Grid container spacing={2} sx={{ mt: 2 }}>
+                                <Grid item xs={12} md={6}>
+                                    <Box border={1} borderRadius={2} p={2}>
+                                        <h4>Member Info</h4>
+                                        <Table size="small">
+                                            <TableBody>
+                                                <TableRow>
+                                                    <TableCell>Username</TableCell>
+                                                    <TableCell>{withdrawal.username}</TableCell>
+                                                </TableRow>
+                                                <TableRow>
+                                                    <TableCell>Member Group</TableCell>
+                                                    <TableCell>{withdrawal.member_group}</TableCell>
+                                                </TableRow>
+                                                <TableRow>
+                                                    <TableCell>Merchant</TableCell>
+                                                    <TableCell>{withdrawal.merchant_name}</TableCell>
+                                                </TableRow>
+                                                <TableRow>
+                                                    <TableCell>Remarks</TableCell>
+                                                    <TableCell>{withdrawal.remarks}</TableCell>
+                                                </TableRow>
+                                            </TableBody>
+                                        </Table>
+                                    </Box>
+                                </Grid>
+
+                                <Grid item xs={12} md={6}>
+                                    <Box border={1} borderRadius={2} p={2}>
+                                        <h4>Bank Info</h4>
+                                        <Table size="small">
+                                            <TableBody>
+                                                <TableRow>
+                                                    <TableCell>Bank Name</TableCell>
+                                                    <TableCell>{withdrawal.member_bank}</TableCell>
+                                                </TableRow>
+                                                <TableRow>
+                                                    <TableCell>Account Name</TableCell>
+                                                    <TableCell>{withdrawal.name}</TableCell>
+                                                </TableRow>
+                                                <TableRow>
+                                                    <TableCell>Account Number</TableCell>
+                                                    <TableCell>{getAccountNumber(withdrawal.member_bank_account)}</TableCell>
+                                                </TableRow>
+                                                <TableRow>
+                                                    <TableCell>Remarks</TableCell>
+                                                    <TableCell>-</TableCell>
+                                                </TableRow>
+                                            </TableBody>
+                                        </Table>
+                                    </Box>
+                                </Grid>
+                            </Grid>
+
+                            {/* Transaction Info */}
+                            <Box border={1} borderRadius={2} p={2} mt={3}>
+                                <h4>Transaction Info</h4>
                                 <Table size="small">
                                     <TableBody>
                                         <TableRow>
-                                            <TableCell>Username</TableCell>
-                                            <TableCell>{withdrawal.username}</TableCell>
+                                            <TableCell>ID</TableCell>
+                                            <TableCell>W{withdrawal.id}</TableCell>
+                                            <TableCell>Created At</TableCell>
+                                            <TableCell>{formatDateTime(withdrawal.created_at)}</TableCell>
                                         </TableRow>
                                         <TableRow>
-                                            <TableCell>Member Group</TableCell>
-                                            <TableCell>{withdrawal.member_group}</TableCell>
+                                            <TableCell>Status</TableCell>
+                                            <TableCell>
+                                                <Chip label={withdrawal.status_name} color="success" />
+                                            </TableCell>
+                                            <TableCell>Confirmed Amount</TableCell>
+                                            <TableCell>{withdrawal.confirmed_amount}</TableCell>
                                         </TableRow>
                                         <TableRow>
-                                            <TableCell>Merchant</TableCell>
-                                            <TableCell>{withdrawal.merchant_name}</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>Remarks</TableCell>
-                                            <TableCell>{withdrawal.remarks}</TableCell>
+                                            <TableCell>Processing Date</TableCell>
+                                            <TableCell>{formatDateTime(withdrawal.processing_time)}</TableCell>
+                                            <TableCell>Handler</TableCell>
+                                            <TableCell>{withdrawal.approved_by}</TableCell>
                                         </TableRow>
                                     </TableBody>
                                 </Table>
-                            </Box>
-                        </Grid>
 
-                        <Grid item xs={12} md={6}>
-                            <Box border={1} borderRadius={2} p={2}>
-                                <h4>Bank Info</h4>
-                                <Table size="small">
-                                    <TableBody>
-                                        <TableRow>
-                                            <TableCell>Bank Name</TableCell>
-                                            <TableCell>{withdrawal.member_bank}</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>Account Name</TableCell>
-                                            <TableCell>{withdrawal.name}</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>Account Number</TableCell>
-                                            <TableCell>{getAccountNumber(withdrawal.member_bank_account)}</TableCell>
-                                        </TableRow>
-                                        <TableRow>
-                                            <TableCell>Remarks</TableCell>
-                                            <TableCell>-</TableCell>
-                                        </TableRow>
-                                    </TableBody>
-                                </Table>
-                            </Box>
-                        </Grid>
-                    </Grid>
-
-                    {/* Transaction Info */}
-                    <Box border={1} borderRadius={2} p={2} mt={3}>
-                        <h4>Transaction Info</h4>
-                        <Table size="small">
-                            <TableBody>
-                                <TableRow>
-                                    <TableCell>ID</TableCell>
-                                    <TableCell>W{withdrawal.id}</TableCell>
-                                    <TableCell>Created At</TableCell>
-                                    <TableCell>{formatDateTime(withdrawal.created_at)}</TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell>Status</TableCell>
-                                    <TableCell>
-                                        <Chip label={withdrawal.status_name} color="success" />
-                                    </TableCell>
-                                    <TableCell>Confirmed Amount</TableCell>
-                                    <TableCell>{withdrawal.confirmed_amount}</TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell>Processing Date</TableCell>
-                                    <TableCell>{formatDateTime(withdrawal.processing_time)}</TableCell>
-                                    <TableCell>Handler</TableCell>
-                                    <TableCell>{withdrawal.approved_by}</TableCell>
-                                </TableRow>
-                            </TableBody>
-                        </Table>
-
-                        <Box mt={2}>
-                            <TextField
-                                label="Remark"
-                                variant="outlined"
-                                fullWidth
-                                size="small"
-                            />
-                            <Button
-                                variant="contained"
-                                color="primary"
-                                sx={{ mt: 2 }}
-                            >
-                                Update
-                            </Button>
-                        </Box>
-                    </Box>
-
-                    {/* --- Bank Transaction Section --- */}
-                    <Box border={1} borderRadius={2} p={2} mt={3}>
-                        <h4>Bank Transaction</h4>
-
-                        <Button
-                            variant="contained"
-                            color="primary"
-                            disabled={!!transactionRow} // disable when editing
-                            onClick={handleAddTransaction}
-                            sx={{ mb: 2 }}
-                        >
-                            Add Transaction
-                        </Button>
-
-                        {/* Input Row (only if Add Transaction clicked) */}
-                        {transactionRow && (
-                            <form onSubmit={handleSubmit(onApproveSubmit)}>
-                                <Box display="flex" gap={2} alignItems="flex-start" mb={2}>
-                                    {/* Merchant Bank */}
-                                    <FormControl fullWidth error={!!errors.bank_id}>
-                                        <Controller
-                                            name="bank_id"
-                                            control={control}
-                                            rules={{ required: true }}
-                                            render={({ field }) => (
-                                                <Select
-                                                    {...field}
-                                                    displayEmpty
-                                                    sx={{ minWidth: 150 }}
-                                                    value={field.value || ''}
-                                                >
-                                                    <MenuItem value="">Please Select</MenuItem>
-                                                    {bankList.map((bank) => (
-                                                        <MenuItem key={bank.id} value={bank.id}>{bank.name}</MenuItem>
-                                                    ))}
-                                                </Select>
-                                            )}
-                                        />
-                                        {errors.bank_id && <FormHelperText error>Please select a bank.</FormHelperText>}
-                                    </FormControl>
-
-                                    {/* Amount */}
-                                    <Controller
-                                        name="amount"
-                                        control={control}
-                                        rules={{ required: true, min: 0.01 }}
-                                        render={({ field }) => (
-                                            <TextField
-                                                {...field}
-                                                label="Amount"
-                                                type="number"
-                                                {...(errors.amount
-                                                    ? {
-                                                        error: true,
-                                                        helperText: errors.amount.type === 'min' ? 'Amount must be greater than 0.' : 'This field is required.'
-                                                    }
-                                                    : {})}
-                                            />
-                                        )}
+                                <Box mt={2}>
+                                    <TextField
+                                        label="Remark"
+                                        variant="outlined"
+                                        fullWidth
+                                        size="small"
                                     />
-
-                                    {/* Processing Fees */}
-                                    <Controller
-                                        name="fee_total"
-                                        control={control}
-                                        rules={{ min: 0 }}
-                                        render={({ field }) => (
-                                            <TextField
-                                                {...field}
-                                                label="Fee Total"
-                                                type="number"
-                                                {...(errors.fee_total && { error: true, helperText: 'Fee Total cannot be negative.' })}
-                                            />
-                                        )}
-                                    />
-                                    <Controller
-                                        name="feeCompany"
-                                        control={control}
-                                        rules={{ required: true, min: 0.01 }}
-                                        render={({ field }) => (
-                                            <TextField
-                                                {...field}
-                                                label="Fee Company"
-                                                type="number"
-                                                {...(errors.feeCompany
-                                                    ? {
-                                                        error: true,
-                                                        helperText:
-                                                            errors.feeCompany.type === 'min'
-                                                                ? 'Fee Company must be greater than 0.'
-                                                                : 'This field is required.'
-                                                    }
-                                                    : {})}
-                                            />
-                                        )}
-                                    />
-                                    <Controller
-                                        name="feePlayer"
-                                        control={control}
-                                        rules={{ required: true, min: 0.01 }}
-                                        render={({ field }) => (
-                                            <TextField
-                                                {...field}
-                                                label="Fee Player"
-                                                type="number"
-                                                {...(errors.feePlayer
-                                                    ? {
-                                                        error: true,
-                                                        helperText:
-                                                            errors.feePlayer.type === 'min'
-                                                                ? 'Fee Player must be greater than 0.'
-                                                                : 'This field is required.'
-                                                    }
-                                                    : {})}
-                                            />
-                                        )}
-                                    />
-
-                                    {/* Receipt */}
-                                    <Button variant="outlined" component="label">
-                                        Upload Receipt
-                                        <Controller
-                                            name="receipt"
-                                            control={control}
-                                            render={({ field }) => (
-                                                <input
-                                                    type="file"
-                                                    hidden
-                                                    onChange={(e) => field.onChange(e.target.files ? e.target.files[0] : null)}
-                                                />
-                                            )}
-                                        />
-                                    </Button>
-
-                                    {/* Actions */}
-                                    <Button variant="contained" color="success" type="submit">
-                                        Approve
-                                    </Button>
-                                    <Button variant="contained" color="warning" onClick={handleRemove}>
-                                        Remove
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        sx={{ mt: 2 }}
+                                    >
+                                        Update
                                     </Button>
                                 </Box>
-                            </form>
-                        )}
+                            </Box>
 
-                        {/* Transaction Table */}
-                        <Table size="small">
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>ID</TableCell>
-                                    <TableCell>Bank</TableCell>
-                                    <TableCell>Amount</TableCell>
-                                    <TableCell>Processing Fee</TableCell>
-                                    <TableCell>Confirmed Amount</TableCell>
-                                    <TableCell>Receipt</TableCell>
-                                    <TableCell>Status</TableCell>
-                                    <TableCell>References</TableCell>
-                                    <TableCell>Remarks</TableCell>
-                                    <TableCell>Created By</TableCell>
-                                    <TableCell>Updated By</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {transactions.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell colSpan={11} align="center">
-                                            No data available
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    transactions.map((t, index) => (
-                                        <TableRow key={index}>
-                                            <TableCell>{index + 1}</TableCell>
-                                            <TableCell>{t.merchant_bank_account}</TableCell>
-                                            <TableCell>{withdrawal.amount}</TableCell>
-                                            <TableCell>
-                                                <Box display="flex" flexDirection="column">
-                                                    <Box display="flex" justifyContent="space-between">
-                                                        <strong>Player:</strong>
-                                                        <span>{withdrawal.member_processing_fee}</span>
-                                                    </Box>
-                                                    <Box display="flex" justifyContent="space-between">
-                                                        <span>Company:</span>
-                                                        <span>{withdrawal.processing_fee}</span>
-                                                    </Box>
-                                                    <Box display="flex" justifyContent="space-between">
-                                                        <span>Total:</span>
-                                                        <span>
-                                                            {(
-                                                                parseFloat(withdrawal.processing_fee || "0") +
-                                                                parseFloat(withdrawal.member_processing_fee || "0")
-                                                            ).toFixed(2)}
-                                                        </span>
-                                                    </Box>
-                                                </Box>
+                            {/* --- Bank Transaction Section --- */}
+                            <Box border={1} borderRadius={2} p={2} mt={3}>
+                                <h4>Bank Transaction</h4>
 
-                                            </TableCell>
-                                            <TableCell>{withdrawal.confirmed_amount}</TableCell>
-                                            <TableCell>-</TableCell>
-                                            <TableCell>{withdrawal.status_name}</TableCell>
-                                            <TableCell>-</TableCell>
-                                            <TableCell>-</TableCell>
-                                            <TableCell>-</TableCell>
-                                            <TableCell>-</TableCell>
-                                        </TableRow>
-                                    ))
+                                <Button
+                                    variant="contained"
+                                    color="primary"
+                                    disabled={!!transactionRow} // disable when editing
+                                    onClick={handleAddTransaction}
+                                    sx={{ mb: 2 }}
+                                >
+                                    Add Transaction
+                                </Button>
+
+                                {/* Input Row (only if Add Transaction clicked) */}
+                                {transactionRow && (
+                                    <form onSubmit={handleSubmit(onApproveSubmit)}>
+                                        <Box display="flex" gap={2} alignItems="flex-start" mb={2}>
+                                            {/* Merchant Bank */}
+                                            <FormControl fullWidth error={!!errors.bank_id}>
+                                                <Controller
+                                                    name="bank_id"
+                                                    control={control}
+                                                    rules={{ required: true }}
+                                                    render={({ field }) => (
+                                                        <Select
+                                                            {...field}
+                                                            displayEmpty
+                                                            sx={{ minWidth: 150 }}
+                                                            value={field.value || ''}
+                                                        >
+                                                            <MenuItem value="">Please Select</MenuItem>
+                                                            {bankList.map((bank) => (
+                                                                <MenuItem key={bank.id} value={bank.id}>{bank.name}</MenuItem>
+                                                            ))}
+                                                        </Select>
+                                                    )}
+                                                />
+                                                {errors.bank_id && <FormHelperText error>Please select a bank.</FormHelperText>}
+                                            </FormControl>
+
+                                            {/* Amount */}
+                                            <Controller
+                                                name="amount"
+                                                control={control}
+                                                rules={{ required: true, min: 0.01 }}
+                                                render={({ field }) => (
+                                                    <TextField
+                                                        {...field}
+                                                        label="Amount"
+                                                        type="number"
+                                                        {...(errors.amount
+                                                            ? {
+                                                                error: true,
+                                                                helperText: errors.amount.type === 'min' ? 'Amount must be greater than 0.' : 'This field is required.'
+                                                            }
+                                                            : {})}
+                                                    />
+                                                )}
+                                            />
+
+                                            {/* Processing Fees */}
+                                            <Controller
+                                                name="fee_total"
+                                                control={control}
+                                                rules={{ min: 0 }}
+                                                render={({ field }) => (
+                                                    <TextField
+                                                        {...field}
+                                                        label="Fee Total"
+                                                        type="number"
+                                                        {...(errors.fee_total && { error: true, helperText: 'Fee Total cannot be negative.' })}
+                                                    />
+                                                )}
+                                            />
+                                            <Controller
+                                                name="feeCompany"
+                                                control={control}
+                                                rules={{ required: true, min: 0.01 }}
+                                                render={({ field }) => (
+                                                    <TextField
+                                                        {...field}
+                                                        label="Fee Company"
+                                                        type="number"
+                                                        {...(errors.feeCompany
+                                                            ? {
+                                                                error: true,
+                                                                helperText:
+                                                                    errors.feeCompany.type === 'min'
+                                                                        ? 'Fee Company must be greater than 0.'
+                                                                        : 'This field is required.'
+                                                            }
+                                                            : {})}
+                                                    />
+                                                )}
+                                            />
+                                            <Controller
+                                                name="feePlayer"
+                                                control={control}
+                                                rules={{ required: true, min: 0.01 }}
+                                                render={({ field }) => (
+                                                    <TextField
+                                                        {...field}
+                                                        label="Fee Player"
+                                                        type="number"
+                                                        {...(errors.feePlayer
+                                                            ? {
+                                                                error: true,
+                                                                helperText:
+                                                                    errors.feePlayer.type === 'min'
+                                                                        ? 'Fee Player must be greater than 0.'
+                                                                        : 'This field is required.'
+                                                            }
+                                                            : {})}
+                                                    />
+                                                )}
+                                            />
+
+                                            {/* Receipt */}
+                                            <Button variant="outlined" component="label">
+                                                Upload Receipt
+                                                <Controller
+                                                    name="receipt"
+                                                    control={control}
+                                                    render={({ field }) => (
+                                                        <input
+                                                            type="file"
+                                                            hidden
+                                                            onChange={(e) => field.onChange(e.target.files ? e.target.files[0] : null)}
+                                                        />
+                                                    )}
+                                                />
+                                            </Button>
+
+                                            {/* Actions */}
+                                            <Button variant="contained" color="success" type="submit">
+                                                Approve
+                                            </Button>
+                                            <Button variant="contained" color="warning" onClick={handleRemove}>
+                                                Remove
+                                            </Button>
+                                        </Box>
+                                    </form>
                                 )}
-                            </TableBody>
-                        </Table>
-                    </Box>
 
-                    <Box border={1} borderRadius={2} p={2} mt={3}>
-                        <h4>Past Transactions</h4>
-                        <Table size="small">
-                            <TableHead>
-                                <TableRow>
-                                    <TableCell>Refer ID</TableCell>
-                                    <TableCell>Transaction Type</TableCell>
-                                    <TableCell>Amount</TableCell>
-                                    <TableCell>References</TableCell>
-                                    <TableCell>Remarks</TableCell>
-                                    <TableCell>Created By</TableCell>
-                                    <TableCell>Updated By</TableCell>
-                                </TableRow>
-                            </TableHead>
-                            <TableBody>
-                                {/* Example rows */}
-                                {/* <TableRow>
+                                {/* Transaction Table */}
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>ID</TableCell>
+                                            <TableCell>Bank</TableCell>
+                                            <TableCell>Amount</TableCell>
+                                            <TableCell>Processing Fee</TableCell>
+                                            <TableCell>Confirmed Amount</TableCell>
+                                            <TableCell>Receipt</TableCell>
+                                            <TableCell>Status</TableCell>
+                                            <TableCell>References</TableCell>
+                                            <TableCell>Remarks</TableCell>
+                                            <TableCell>Created By</TableCell>
+                                            <TableCell>Updated By</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {transactions.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={11} align="center">
+                                                    No data available
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            transactions.map((t, index) => (
+                                                <TableRow key={index}>
+                                                    <TableCell>{index + 1}</TableCell>
+                                                    <TableCell>{t.merchant_bank_account}</TableCell>
+                                                    <TableCell>{withdrawal.amount}</TableCell>
+                                                    <TableCell>
+                                                        <Box display="flex" flexDirection="column">
+                                                            <Box display="flex" justifyContent="space-between">
+                                                                <strong>Player:</strong>
+                                                                <span>{withdrawal.member_processing_fee}</span>
+                                                            </Box>
+                                                            <Box display="flex" justifyContent="space-between">
+                                                                <span>Company:</span>
+                                                                <span>{withdrawal.processing_fee}</span>
+                                                            </Box>
+                                                            <Box display="flex" justifyContent="space-between">
+                                                                <span>Total:</span>
+                                                                <span>
+                                                                    {(
+                                                                        parseFloat(withdrawal.processing_fee || "0") +
+                                                                        parseFloat(withdrawal.member_processing_fee || "0")
+                                                                    ).toFixed(2)}
+                                                                </span>
+                                                            </Box>
+                                                        </Box>
+
+                                                    </TableCell>
+                                                    <TableCell>{withdrawal.confirmed_amount}</TableCell>
+                                                    <TableCell>-</TableCell>
+                                                    <TableCell>{withdrawal.status_name}</TableCell>
+                                                    <TableCell>-</TableCell>
+                                                    <TableCell>-</TableCell>
+                                                    <TableCell>-</TableCell>
+                                                    <TableCell>-</TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </Box>
+
+                            <Box border={1} borderRadius={2} p={2} mt={3}>
+                                <h4>Past Transactions</h4>
+                                <Table size="small">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell>Refer ID</TableCell>
+                                            <TableCell>Transaction Type</TableCell>
+                                            <TableCell>Amount</TableCell>
+                                            <TableCell>References</TableCell>
+                                            <TableCell>Remarks</TableCell>
+                                            <TableCell>Created By</TableCell>
+                                            <TableCell>Updated By</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {/* Example rows */}
+                                        {/* <TableRow>
                                     <TableCell>345659</TableCell>
                                     <TableCell>Withdrawal</TableCell>
                                     <TableCell sx={{ color: "red" }}>-600.00</TableCell>
@@ -870,44 +870,68 @@ const UserWithdrawalModal = ({
                                     <TableCell>kumar775<br />2025-09-18 23:10</TableCell>
                                     <TableCell>-<br />2025-09-18 23:11</TableCell>
                                 </TableRow> */}
-                                <TableRow>
-                                    <TableCell colSpan={6} align="center">
-                                        No data available
-                                    </TableCell>
+                                        <TableRow>
+                                            <TableCell colSpan={6} align="center">
+                                                No data available
+                                            </TableCell>
 
-                                </TableRow>
+                                        </TableRow>
 
-                                {/* If no data */}
-                                {/* 
+                                        {/* If no data */}
+                                        {/* 
         <TableRow>
           <TableCell colSpan={7} align="center">
             No past transactions
           </TableCell>
         </TableRow>
         */}
-                            </TableBody>
-                        </Table>
-                    </Box>
+                                    </TableBody>
+                                </Table>
+                            </Box>
+                        </DialogContent>
+
+                        {/* Fixed bottom actions */}
+                        {withdrawal.status !== 1 && (
+                            <DialogActions sx={{ justifyContent: "flex-start", p: 2 }}>
+                                <Button
+                                    variant="contained"
+                                    color="error"
+                                    onClick={() => setConfirmOpen(true)}
+                                >
+                                    Reject
+                                </Button>
+
+                            </DialogActions>
+                        )}
+                    </>
+                )}
+            </Dialog>
+
+            {/* 🔴 Confirmation Dialog */}
+            <Dialog open={confirmOpen} onClose={() => setConfirmOpen(false)}>
+                <DialogTitle>Confirm Rejection</DialogTitle>
+                <DialogContent>
+                    Are you sure you want to reject this withdrawal?
+                    <TextField
+                        autoFocus
+                        margin="dense"
+                        id="rejection-remark"
+                        label="Rejection Remark"
+                        type="text"
+                        fullWidth
+                        variant="standard"
+                        value={rejectionRemark}
+                        onChange={(e) => setRejectionRemark(e.target.value)}
+                    />
                 </DialogContent>
-            )}
-        </Dialog>
-        // <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-        //     <DialogTitle>
-        //         {withdrawal && (<> </>)}
-        //         {/* User Details {username ? `- ${username}` : ''} */}
-        //     </DialogTitle>
-        //     <DialogContent>
-        //         {loading && <Typography>Loading...</Typography>}
-        //         {error && <Typography color="error">{error}</Typography>}
-        //         {withdrawal && (
-        //             <>
-        //             </>
-        //         )}
-        //         <Button onClick={onClose} variant="contained" className="mt-2">
-        //             Close
-        //         </Button>
-        //     </DialogContent>
-        // </Dialog>
+                <DialogActions>
+                    <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
+                    <Button variant="contained" color="error" onClick={handleReject}>
+                        Confirm
+                    </Button>
+                </DialogActions>
+            </Dialog>
+        </>
     )
 }
 
