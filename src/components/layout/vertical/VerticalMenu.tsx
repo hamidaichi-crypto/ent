@@ -100,7 +100,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
                 <MenuSection label="PAYMENT">
                     <MenuItem
                         href={`/${locale}/apps/withdrawal`}
-                        icon={<i className='ri-mail-open-line' />}
+                        icon={<i className='ri-upload-2-line' />}
                         exactMatch={false}
                         activeUrl='/apps/withdrawal'
                     >
