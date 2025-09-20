@@ -210,7 +210,16 @@ const WithdrawalListTable = ({
             }),
             columnHelper.accessor('status', {
                 header: 'Status',
-                cell: ({ row }) => <Typography>{row.original.status}</Typography>
+                cell: ({ row }) => <Chip
+                    label={row.original.status_name}
+                    color={
+                        row.original.status === 0 ? 'default' :
+                            row.original.status === 1 ? 'success' :
+                                row.original.status === 2 ? 'error' : 'warning'
+                    }
+                    variant='tonal'
+                    size='small'
+                />
             }),
             columnHelper.accessor('amount', {
                 header: 'Amount',
@@ -594,7 +603,15 @@ const UserWithdrawalModal = ({
                                         <TableRow>
                                             <TableCell>Status</TableCell>
                                             <TableCell>
-                                                <Chip label={withdrawal.status_name} color="success" />
+                                                <Chip
+                                                    label={withdrawal.status_name}
+                                                    color={
+                                                        withdrawal.status === 0 ? 'default' :
+                                                            withdrawal.status === 1 ? 'success' :
+                                                                withdrawal.status === 2 ? 'error' : 'warning'
+                                                    }
+                                                    variant='tonal'
+                                                />
                                             </TableCell>
                                             <TableCell>Confirmed Amount</TableCell>
                                             <TableCell>{withdrawal.confirmed_amount}</TableCell>
