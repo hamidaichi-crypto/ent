@@ -417,16 +417,16 @@ const UserWithdrawalModal = ({
         reset,
         formState: { errors }
     } = useForm({
+        // Initialize with empty or null values
         defaultValues: {
-            bank_id: null,
-            amount: '',
-            fee_total: 0,
-            feeCompany: '',
-            feePlayer: '',
-            receipt: null
+            withdraw_id: null,
+            amount: null,
+            member_account_id: null,
+            bank_account_id: null,
+            merchant_bank_id: null,
+            remark: ''
         }
     });
-
     const [transactionRow, setTransactionRow] = useState<any>(null);
     const [transactions, setTransactions] = useState<BankTransaction[]>([]);
 
@@ -453,18 +453,50 @@ const UserWithdrawalModal = ({
 
     const handleAddTransaction = () => {
         setTransactionRow({}); // Use an empty object to indicate the form is open
-        reset({ bank_id: null, amount: '', fee_total: 0, feeCompany: '', feePlayer: '', receipt: null });
+        reset({
+            withdraw_id: null,
+            amount: null,
+            member_account_id: null,
+            bank_account_id: null,
+            merchant_bank_id: null,
+            remark: ''
+            // bank_id: null,
+            // amount: '',
+            // remark: '',
+            // fee_total: 0,
+            // feeCompany: '', 
+            // feePlayer: '', 
+            // receipt: null
+        });
     };
 
-    const onApproveSubmit = (data: any) => {
+    const onApproveSubmit = async (data: any) => {
         const selectedBank = bankList.find(bank => bank.id === data.bank_id);
         const newTransaction = {
             ...data,
             merchant_bank_account: selectedBank ? selectedBank.name : ''
+            // console.log("Approving with body:", body);
         };
-        setTransactions(prev => [newTransaction, ...prev]);
-        setTransactionRow(null);
-        reset();
+        const body = {
+            withdraw_id: withdrawal?.id,
+            amount: parseFloat(newTransaction.amount),
+            member_account_id: withdrawal?.member_id,
+            bank_account_id: getAccountNumber(withdrawal?.member_bank_account),
+            merchant_bank_id: selectedBank?.id, // Placeholder, adjust as needed
+            remarks: newTransaction.remark || "Approved by user" // Use remark from state
+        };
+
+        try {
+            await postData(`/withdrawals/approve`, body);
+            setConfirmOpen(false);
+            onClose(); // close main modal
+            setTransactions(prev => [newTransaction, ...prev]);
+            setTransactionRow(null);
+            reset();
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'An unknown error occurred');
+        }
+
     };
 
     const handleRemove = () => {
@@ -646,31 +678,35 @@ const UserWithdrawalModal = ({
                             <Box border={1} borderRadius={2} p={2} mt={3}>
                                 <h4>Bank Transaction</h4>
 
-                                <Button
-                                    variant="contained"
-                                    color="primary"
-                                    disabled={!!transactionRow} // disable when editing
-                                    onClick={handleAddTransaction}
-                                    sx={{ mb: 2 }}
-                                >
-                                    Add Transaction
-                                </Button>
+                                {withdrawal.status === 0 && (
+                                    <Button
+                                        variant="contained"
+                                        color="primary"
+                                        disabled={!!transactionRow} // disable when editing
+                                        onClick={handleAddTransaction}
+                                        sx={{ mb: 2 }}
+                                    >
+                                        Add Transaction
+                                    </Button>
+                                )}
 
                                 {/* Input Row (only if Add Transaction clicked) */}
                                 {transactionRow && (
                                     <form onSubmit={handleSubmit(onApproveSubmit)}>
                                         <Box display="flex" gap={2} alignItems="flex-start" mb={2}>
                                             {/* Merchant Bank */}
-                                            <FormControl fullWidth error={!!errors.bank_id}>
+                                            <FormControl fullWidth error={!!errors.merchant_bank_id}
+                                                sx={{ width: "250px" }}   // 👈 fixed width here
+                                            >
                                                 <Controller
-                                                    name="bank_id"
+                                                    name="merchant_bank_id"
                                                     control={control}
                                                     rules={{ required: true }}
                                                     render={({ field }) => (
                                                         <Select
                                                             {...field}
                                                             displayEmpty
-                                                            sx={{ minWidth: 150 }}
+                                                            sx={{ minWidth: 50 }}
                                                             value={field.value || ''}
                                                         >
                                                             <MenuItem value="">Please Select</MenuItem>
@@ -680,7 +716,7 @@ const UserWithdrawalModal = ({
                                                         </Select>
                                                     )}
                                                 />
-                                                {errors.bank_id && <FormHelperText error>Please select a bank.</FormHelperText>}
+                                                {errors.merchant_bank_id && <FormHelperText error>Please select a bank.</FormHelperText>}
                                             </FormControl>
 
                                             {/* Amount */}
@@ -692,7 +728,6 @@ const UserWithdrawalModal = ({
                                                     <TextField
                                                         {...field}
                                                         label="Amount"
-                                                        type="number"
                                                         {...(errors.amount
                                                             ? {
                                                                 error: true,
@@ -703,8 +738,19 @@ const UserWithdrawalModal = ({
                                                 )}
                                             />
 
-                                            {/* Processing Fees */}
                                             <Controller
+                                                name="remark"
+                                                control={control}
+                                                render={({ field }) => (
+                                                    <TextField
+                                                        {...field}
+                                                        label="Remark"
+                                                    />
+                                                )}
+                                            />
+
+                                            {/* Processing Fees */}
+                                            {/* <Controller
                                                 name="fee_total"
                                                 control={control}
                                                 rules={{ min: 0 }}
@@ -712,12 +758,11 @@ const UserWithdrawalModal = ({
                                                     <TextField
                                                         {...field}
                                                         label="Fee Total"
-                                                        type="number"
                                                         {...(errors.fee_total && { error: true, helperText: 'Fee Total cannot be negative.' })}
                                                     />
                                                 )}
-                                            />
-                                            <Controller
+                                            /> */}
+                                            {/* <Controller
                                                 name="feeCompany"
                                                 control={control}
                                                 rules={{ required: true, min: 0.01 }}
@@ -725,7 +770,6 @@ const UserWithdrawalModal = ({
                                                     <TextField
                                                         {...field}
                                                         label="Fee Company"
-                                                        type="number"
                                                         {...(errors.feeCompany
                                                             ? {
                                                                 error: true,
@@ -737,8 +781,8 @@ const UserWithdrawalModal = ({
                                                             : {})}
                                                     />
                                                 )}
-                                            />
-                                            <Controller
+                                            /> */}
+                                            {/* <Controller
                                                 name="feePlayer"
                                                 control={control}
                                                 rules={{ required: true, min: 0.01 }}
@@ -758,10 +802,10 @@ const UserWithdrawalModal = ({
                                                             : {})}
                                                     />
                                                 )}
-                                            />
+                                            /> */}
 
                                             {/* Receipt */}
-                                            <Button variant="outlined" component="label">
+                                            {/* <Button variant="outlined" component="label">
                                                 Upload Receipt
                                                 <Controller
                                                     name="receipt"
@@ -774,7 +818,7 @@ const UserWithdrawalModal = ({
                                                         />
                                                     )}
                                                 />
-                                            </Button>
+                                            </Button> */}
 
                                             {/* Actions */}
                                             <Button variant="contained" color="success" type="submit">

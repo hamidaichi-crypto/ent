@@ -13,6 +13,8 @@ import ModeDropdown from '@components/layout/shared/ModeDropdown'
 import ShortcutsDropdown from '@components/layout/shared/ShortcutsDropdown'
 import NotificationsDropdown from '@components/layout/shared/NotificationsDropdown'
 import UserDropdown from '@components/layout/shared/UserDropdown'
+import WithdrawIcon from '@components/layout/shared/WithdrawIcon'
+import UploadIcon from '@components/layout/shared/UploadIcon'
 
 // Util Imports
 import { verticalLayoutClasses } from '@layouts/utils/layoutClasses'
@@ -113,6 +115,8 @@ const NavbarContent = () => {
             </div>
             <div className='flex items-center'>
                 {/* <LanguageDropdown /> */}
+                <WithdrawIcon />
+                {/* <UploadIcon /> */}
                 <ModeDropdown />
                 {/* <ShortcutsDropdown shortcuts={shortcuts} /> */}
                 {/* <NotificationsDropdown notifications={notifications} /> */}

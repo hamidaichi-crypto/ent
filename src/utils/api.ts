@@ -1,7 +1,7 @@
 'use client'
 
 import { useSession, signOut } from 'next-auth/react'
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
 const BASE_URL = 'https://xpi.machibo.com/api'
@@ -35,42 +35,39 @@ export const useFetchData = () => {
         }
     }, [session, status, router]); // Re-run effect if session, status, or router changes
 
-    // Only return fetchData if the session is authenticated AND we have a valid accessToken
-    // The check for !accessToken is crucial here.
-    if (status !== 'authenticated' || !accessToken) {
-        // return () => {
-        //     console.log(`Session status: ${status}, Access token: ${accessToken}. Authentication required or session loading.`);
-        //     return Promise.reject(new Error("Authentication required or session loading."));
-        // };
-    }
+    const fetchData = useCallback(async (endpoint: string) => {
+        // Do not proceed if there is no access token.
+        if (!accessToken) {
+            // This can happen during initial load or after a logout.
+            // You might want to throw an error or handle it gracefully.
+            console.error('fetchData called without an access token.');
+            throw new Error('Authentication token is not available.');
+        }
 
-    const AUTH_TOKEN = `Bearer ${accessToken}`;
+        const AUTH_TOKEN = `Bearer ${accessToken}`;
 
-    console.log("AUTH_TOKEN", AUTH_TOKEN)
-
-    const fetchData = async (endpoint: string) => {
         const res = await fetch(`${BASE_URL}${endpoint}`, {
             method: 'GET',
             headers: {
                 'Accept': 'application/json',
                 'Authorization': AUTH_TOKEN
             }
-        })
+        });
 
         if (res.status === 401) {
             // If 401, clear localStorage and sign out
             localStorage.removeItem('accessToken');
             setAccessToken(null); // Also clear local state
-            // signOut();
+            signOut({ callbackUrl: '/login' });
             throw new Error('Unauthorized. Logging out.');
         }
 
         if (!res.ok) {
-            throw new Error(`Failed to fetch data from ${endpoint}`)
+            throw new Error(`Failed to fetch data from ${endpoint}`);
         }
 
-        return res.json()
-    }
+        return res.json();
+    }, [accessToken]); // Dependency on accessToken ensures the function has the correct token
 
     return fetchData
 }
