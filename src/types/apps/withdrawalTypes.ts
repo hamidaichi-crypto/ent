@@ -1,6 +1,12 @@
 // Type Imports
 import type { ThemeColor } from '@core/types'
 
+type risk_profile = {
+    risk_score: number,
+    color: string,
+}
+
+
 export type WithdrawalType = {
     id: number,
     member_id: number,
@@ -50,6 +56,7 @@ export type WithdrawalType = {
     grade: string, // not available
     confirm_account: string, // not available
     handler: string // not available    
+    risk_profile: risk_profile
 
     //   avatarColor?: ThemeColor
 }

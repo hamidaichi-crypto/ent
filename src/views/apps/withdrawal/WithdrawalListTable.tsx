@@ -202,7 +202,7 @@ const WithdrawalListTable = ({
             }),
             columnHelper.accessor('risk_score', {
                 header: 'Risk Score',
-                cell: ({ row }) => <Typography> - </Typography>
+                cell: ({ row }) => <Typography color={row.original.risk_profile?.color}> {row.original.risk_profile?.risk_score} </Typography>
             }),
             columnHelper.accessor('grade', {
                 header: 'Grade',
