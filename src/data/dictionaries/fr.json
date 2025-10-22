@@ -103,6 +103,8 @@
         "menuLevel2": "Niveau menu 2",
         "menuLevel3": "Niveau menu 3",
         "disabledMenu": "Menu désactivé",
-        "withdrawal": "Withdrawal"
+        "withdrawal": "Withdrawal",
+        "report": "Report",
+        "memberReport": "Member Report"
     }
 }
