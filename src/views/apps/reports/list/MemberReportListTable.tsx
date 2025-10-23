@@ -136,114 +136,6 @@ type PaginationData = {
     total: number
 }
 
-// --- User Detail Modal Component ---
-const UserDetailModal = ({
-    username,
-    open,
-    onClose
-}: { username: string | null; open: boolean; onClose: () => void }) => {
-    const [userData, setUserData] = useState<MemberReportType | null>(null)
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState<string | null>(null)
-    const fetchData = useFetchData()
-
-    // 🗂 Cache user data by username
-    const cacheRef = useRef<Record<string, MemberReportType>>({})
-
-    // Fetch user details (and update cache)
-    const loadUserData = async (uname: string) => {
-        setLoading(true)
-        setError(null)
-        try {
-            const response = await fetchData(`/members/u/${uname}`)
-            console.log("response")
-            console.log(response)
-            setUserData(response?.data)
-            cacheRef.current[uname] = response // ✅ cache it
-        } catch (err) {
-            console.error('Error fetching user data:', err)
-            setError('Failed to load user data.')
-        } finally {
-            setLoading(false)
-        }
-    }
-
-    useEffect(() => {
-        if (!open || !username) return
-
-        // ✅ If cached, use it immediately
-        if (cacheRef.current[username]) {
-            setUserData(cacheRef.current[username])
-            setLoading(false)
-            setError(null)
-        } else {
-            // Otherwise fetch from API
-            loadUserData(username)
-        }
-    }, [username, open])
-
-    // Don’t clear cache on close → only reset modal state
-    useEffect(() => {
-        if (!open) {
-            setError(null)
-            setLoading(false)
-            setUserData(null) // clear local state, but keep cache
-        }
-    }, [open])
-
-    return (
-        <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-            <DialogTitle>
-                User Details {username ? `- ${username}` : ''}
-            </DialogTitle>
-            <DialogContent>
-                {loading && <Typography>Loading...</Typography>}
-                {error && <Typography color="error">{error}</Typography>}
-                {userData && (
-                    <>
-                        <Typography variant="h6">Name: {userData.name}</Typography>
-                        <Typography>Username: {userData.username}</Typography>
-                        <Typography>Email: {userData.email}</Typography>
-                        <Typography>Score: {userData.score ?? '-'}</Typography>
-                        <Typography>Grade: {userData.grade ?? '-'}</Typography>
-                        <Typography>
-                            Birthday: {formatDateTime(userData.date_of_birth)}
-                        </Typography>
-                        <Typography>Mobile: {userData.mobile}</Typography>
-                        <Typography>Member Group: {userData.member_group_id}</Typography>
-                        <Typography>Status: {userData.status}</Typography>
-                        <Typography>Refer By: {userData.referrer}</Typography>
-                        <Typography>Remark: {userData.remark ?? '-'}</Typography>
-                        <Typography>
-                            Registration Date:{' '}
-                            {formatDateTime(userData.registration_created_at)}
-                        </Typography>
-                        <Typography>Registration IP: {userData.registration_ip}</Typography>
-                        <Typography>
-                            Registration Domain: {userData.registration_site}
-                        </Typography>
-                    </>
-                )}
-
-                {/* ✅ Refresh button */}
-                {username && (
-                    <Button
-                        onClick={() => loadUserData(username)}
-                        variant="outlined"
-                        className="mt-2 mr-2"
-                    >
-                        Refresh
-                    </Button>
-                )}
-
-                <Button onClick={onClose} variant="contained" className="mt-2">
-                    Close
-                </Button>
-            </DialogContent>
-        </Dialog>
-    )
-}
-
 
 const MemberReportListTable = ({
     tableData,
@@ -252,6 +144,7 @@ const MemberReportListTable = ({
     onRowsPerPageChange,
     filters,
     onFilterChange,
+    onClear,
     onSearch // Receive onSearch prop
 }: {
     tableData?: MemberReportType[]
@@ -268,6 +161,7 @@ const MemberReportListTable = ({
         startDate: string
         endDate: string
     }) => void
+    onClear: () => void
     onSearch: () => void // Add onSearch prop
 }) => {
     // States
@@ -587,7 +481,7 @@ const MemberReportListTable = ({
         <>
             <Card>
                 <CardHeader title='Member Report' className='pbe-4' />
-                <TableFilters filters={filters} onFilterChange={onFilterChange} onSearch={onSearch} />
+                <TableFilters filters={filters} onFilterChange={onFilterChange} onSearch={onSearch} onClear={onClear} />
                 <Divider />
                 <div className='overflow-x-auto'>
                     <table className={tableStyles.table}>
@@ -665,14 +559,6 @@ const MemberReportListTable = ({
                     onRowsPerPageChange={e => onRowsPerPageChange(Number(e.target.value))}
                 />
             </Card>
-            <UserDetailModal
-                username={selectedUsername}
-                open={isUserDetailModalOpen}
-                onClose={() => {
-                    setIsUserDetailModalOpen(false)
-                    setSelectedUsername(null)
-                }}
-            />
         </>
     )
 }

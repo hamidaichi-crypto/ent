@@ -74,7 +74,7 @@ const MemberList = () => {
             let queryString = `/members?page=${page}&per_page=${perPage}`
 
             if (currentFilters.username) {
-                queryString += `&user_name=${currentFilters.username}`
+                queryString += `&username=${currentFilters.username}`
             }
             if (currentFilters.name) {
                 queryString += `&name=${currentFilters.name}`
@@ -142,6 +142,19 @@ const MemberList = () => {
         setPaginationData(prev => ({ ...prev, current_page: 1 })) // Reset to first page on search
     }
 
+    const handleClear = () => {
+        setFilters({
+            username: '',
+            name: '',
+            mobile: '',
+            dateType: 'registration_date',
+            startDate: defaultStartDate,
+            endDate: defaultEndDate
+        })
+        setTriggerFetch(true)
+        setPaginationData(prev => ({ ...prev, current_page: 1 }))
+    }
+
     if (loading) {
         return (
             <Box className='flex justify-center items-center min-bs-[200px]'>
@@ -160,6 +173,7 @@ const MemberList = () => {
                     onRowsPerPageChange={handleRowsPerPageChange}
                     filters={filters}
                     onFilterChange={handleFilterChange}
+                    onClear={handleClear}
                     onSearch={handleSearch} // Pass handleSearch to WithdrawalListTable
                 />
             </Grid>

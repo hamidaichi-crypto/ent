@@ -130,6 +130,16 @@ const MemberList = () => {
         // setPaginationData(prev => ({ ...prev, current_page: 1 })) // Reset to first page on search
     }
 
+    const handleClear = () => {
+        setFilters({
+            username: '',
+            startDate: defaultStartDate,
+            endDate: defaultEndDate
+        })
+        setTriggerFetch(true)
+        // setPaginationData(prev => ({ ...prev, current_page: 1 }))
+    }
+
     if (loading) {
         return (
             <Box className='flex justify-center items-center min-bs-[200px]'>
@@ -148,6 +158,7 @@ const MemberList = () => {
                     onRowsPerPageChange={handleRowsPerPageChange}
                     filters={filters}
                     onFilterChange={handleFilterChange}
+                    onClear={handleClear}
                     onSearch={handleSearch} // Pass handleSearch to WithdrawalListTable
                 />
             </Grid>

@@ -7,6 +7,7 @@ import FormControl from '@mui/material/FormControl'
 import Grid from '@mui/material/Grid2'
 import InputLabel from '@mui/material/InputLabel'
 import MenuItem from '@mui/material/MenuItem'
+import IconButton from '@mui/material/IconButton'
 import Select from '@mui/material/Select'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button' // Import Button
@@ -29,13 +30,19 @@ type Filters = {
 type TableFiltersProps = {
     filters: Filters
     onFilterChange: (newFilters: Filters) => void
+    onClear: () => void
     onSearch: () => void // Add onSearch prop
 }
 
-const TableFilters = ({ filters, onFilterChange, onSearch }: TableFiltersProps) => {
+const TableFilters = ({ filters, onFilterChange, onClear, onSearch }: TableFiltersProps) => {
 
     const handleStatusChange = (event: SelectChangeEvent<string>) => {
         onFilterChange({ ...filters, dateType: event.target.value })
+    }
+
+    const handleClearDateType = (e: React.MouseEvent) => {
+        e.stopPropagation() // Prevent the select dropdown from opening
+        onFilterChange({ ...filters, dateType: '' })
     }
 
     const handleStartDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -131,8 +138,20 @@ const TableFilters = ({ filters, onFilterChange, onSearch }: TableFiltersProps) 
                             onChange={handleStatusChange}
                             label='Select Status'
                             labelId='status-select'
+                            endAdornment={
+                                filters.dateType && (
+                                    <IconButton
+                                        size='small'
+                                        onClick={handleClearDateType}
+                                        sx={{ position: 'absolute', right: '2rem' }}
+                                    >
+                                        <i className='ri-close-line' />
+                                    </IconButton>
+                                )
+                            }
                             inputProps={{ placeholder: 'Select Status' }}
                         >
+                            <MenuItem value=''><em>None</em></MenuItem>
                             <MenuItem value='registration_date'>Registration Date</MenuItem>
                             <MenuItem value='last_login_date'>Last Login Date</MenuItem>
                         </Select>
@@ -163,9 +182,12 @@ const TableFilters = ({ filters, onFilterChange, onSearch }: TableFiltersProps) 
                     />
                 </Grid>
                 {/* Add Search Button */}
-                <Grid size={{ xs: 12, sm: 4 }} sx={{ display: 'flex', alignItems: 'center' }}>
+                <Grid size={{ xs: 12, sm: 4 }} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Button variant='contained' onClick={onSearch}>
                         Search
+                    </Button>
+                    <Button variant='outlined' color='secondary' onClick={onClear}>
+                        Clear
                     </Button>
                 </Grid>
             </Grid>

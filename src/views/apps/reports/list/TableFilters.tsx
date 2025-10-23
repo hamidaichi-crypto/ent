@@ -26,15 +26,11 @@ type Filters = {
 type TableFiltersProps = {
     filters: Filters
     onFilterChange: (newFilters: Filters) => void
+    onClear: () => void
     onSearch: () => void // Add onSearch prop
 }
 
-const TableFilters = ({ filters, onFilterChange, onSearch }: TableFiltersProps) => {
-
-    const handleStatusChange = (event: SelectChangeEvent<string>) => {
-        onFilterChange({ ...filters, dateType: event.target.value })
-    }
-
+const TableFilters = ({ filters, onFilterChange, onClear, onSearch }: TableFiltersProps) => {
     const handleStartDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         onFilterChange({ ...filters, startDate: event.target.value })
     }
@@ -90,9 +86,12 @@ const TableFilters = ({ filters, onFilterChange, onSearch }: TableFiltersProps) 
                     />
                 </Grid>
                 {/* Add Search Button */}
-                <Grid size={{ xs: 12, sm: 4 }} sx={{ display: 'flex', alignItems: 'center' }}>
+                <Grid size={{ xs: 12, sm: 4 }} sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Button variant='contained' onClick={onSearch}>
                         Search
+                    </Button>
+                    <Button variant='outlined' color='secondary' onClick={onClear}>
+                        Clear
                     </Button>
                 </Grid>
             </Grid>
