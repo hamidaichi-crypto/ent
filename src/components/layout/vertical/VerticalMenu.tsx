@@ -107,6 +107,11 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
                         {dictionary['navigation'].withdrawal}
                     </MenuItem>
                 </MenuSection>
+                <MenuSection label="REPORT">
+                    <SubMenu label={dictionary['navigation'].report} icon={<i className='ri-user-line' />}>
+                        <MenuItem href={`/${locale}/apps/reports/list`}>{dictionary['navigation'].memberReport}</MenuItem>
+                    </SubMenu>
+                </MenuSection>
                 {/* <MenuSection label={dictionary['navigation'].appsPages}>
                     <SubMenu label={dictionary['navigation'].frontPages} icon={<i className='ri-file-copy-line' />}>
                         <MenuItem href='/front-pages/landing-page' target='_blank'>

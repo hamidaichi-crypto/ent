@@ -9,18 +9,18 @@ import CircularProgress from '@mui/material/CircularProgress'
 import Box from '@mui/material/Box'
 
 // Type Imports
-import type { MemberType } from '@/types/apps/memberTypes'
+import type { MemberReportType } from '@/types/apps/memberReportTypes'
 
 // Component Imports
-import MemberListTable from './MemberListTable'
+import MemberReportListTable from './MemberReportListTable'
 
 // Utils Imports
 import { useFetchData } from '@/utils/api'
 
 const MemberList = () => {
     // States
-    const [memberData, setMemberData] = useState<MemberType[] | undefined>(undefined)
-    const [loading, setLoading] = useState<boolean>(true)
+    const [memberReportData, setMemberReportData] = useState<MemberReportType[] | undefined>(undefined)
+    const [loading, setLoading] = useState<boolean>(false)
     const [paginationData, setPaginationData] = useState({
         current_page: 1,
         last_page: 1,
@@ -47,16 +47,10 @@ const MemberList = () => {
 
     const [filters, setFilters] = useState<{
         username: string,
-        name: string,
-        mobile: string,
-        dateType: string,
         startDate: string
         endDate: string
     }>({
-        username: '',
-        name: '',
-        mobile: '',
-        dateType: 'registration_date',
+        username: 'dibloo',
         startDate: defaultStartDate, // Set default start date
         endDate: defaultEndDate // Set default end date
     })
@@ -67,24 +61,16 @@ const MemberList = () => {
     // Hooks
     const fetchData = useFetchData()
 
-    const fetchMemberData = async (page: number, perPage: number, currentFilters: typeof filters) => {
+    const fetchMemberReportData = async (currentFilters: typeof filters) => {
+        console.log("fetchMemberReportData")
         try {
             setLoading(true)
 
-            let queryString = `/members?page=${page}&per_page=${perPage}`
+            // let queryString = `/members?page=${page}&per_page=${perPage}`
+            let queryString = `/members/game_reports?`
 
             if (currentFilters.username) {
                 queryString += `&username=${currentFilters.username}`
-            }
-            if (currentFilters.name) {
-                queryString += `&name=${currentFilters.name}`
-            }
-            if (currentFilters.mobile) {
-                queryString += `&mobile=${currentFilters.mobile}`
-            }
-
-            if (currentFilters.dateType) {
-                queryString += `&date_type=${currentFilters.dateType}`
             }
             if (currentFilters.startDate) {
                 queryString += `&start_date=${currentFilters.startDate}`
@@ -93,15 +79,17 @@ const MemberList = () => {
                 queryString += `&end_date=${currentFilters.endDate}`
             }
 
-
+            console.log("qurery", queryString)
 
             const data = await fetchData(queryString)
-            setMemberData(data?.data?.rows)
-            setPaginationData(data?.data?.paginations)
+            console.log("data", data)
+            console.log("data?.report", data?.data?.report)
+            setMemberReportData(data?.data?.report)
+            // setPaginationData(data?.data?.paginations)
         } catch (error) {
             console.error('Failed to fetch member data:', error)
-            setMemberData([]) // Set to empty array on error
-            setPaginationData({ current_page: 1, last_page: 1, per_page: 30, total: 0 })
+            setMemberReportData([]) // Set to empty array on error
+            // setPaginationData({ current_page: 1, last_page: 1, per_page: 30, total: 0 })
         } finally {
             setLoading(false)
         }
@@ -111,48 +99,45 @@ const MemberList = () => {
         console.log("use effeasd fetcmamager", triggerFetch)
         if (triggerFetch) {
             console.log("use triggerFetch triggerFetch")
-            fetchMemberData(paginationData.current_page, paginationData.per_page, filters)
+            fetchMemberReportData(filters)
             setTriggerFetch(false) // Reset trigger after fetch
         }
     }, [triggerFetch, paginationData.current_page, paginationData.per_page, filters]) // Dependencies for fetch
 
     // Initial fetch on component mount
     useEffect(() => {
-        // Trigger initial fetch with default filters
-        setTriggerFetch(true)
+        // Trigger initial fetch with default filters 
+        setTriggerFetch(false) // TURN OFF INITIAL LOAD
     }, [])
 
 
     const handlePageChange = (newPage: number) => {
-        fetchMemberData(newPage, paginationData.per_page, filters)
+        fetchMemberReportData(filters)
     }
 
     const handleRowsPerPageChange = (newPerPage: number) => {
-        fetchMemberData(1, newPerPage, filters) // Reset to first page when rows per page changes
+        fetchMemberReportData(filters) // Reset to first page when rows per page changes
     }
 
     const handleFilterChange = (newFilters: typeof filters) => {
         setFilters(newFilters)
-        setPaginationData(prev => ({ ...prev, current_page: 1 })) // Reset to first page on filter change
+        // setPaginationData(prev => ({ ...prev, current_page: 1 })) // Reset to first page on filter change
     }
 
     // Handler for the search button
     const handleSearch = () => {
         setTriggerFetch(true)
-        setPaginationData(prev => ({ ...prev, current_page: 1 })) // Reset to first page on search
+        // setPaginationData(prev => ({ ...prev, current_page: 1 })) // Reset to first page on search
     }
 
     const handleClear = () => {
         setFilters({
             username: '',
-            name: '',
-            mobile: '',
-            dateType: 'registration_date',
             startDate: defaultStartDate,
             endDate: defaultEndDate
         })
         setTriggerFetch(true)
-        setPaginationData(prev => ({ ...prev, current_page: 1 }))
+        // setPaginationData(prev => ({ ...prev, current_page: 1 }))
     }
 
     if (loading) {
@@ -166,8 +151,8 @@ const MemberList = () => {
     return (
         <Grid container spacing={6}>
             <Grid size={{ xs: 12 }}>
-                <MemberListTable
-                    tableData={memberData}
+                <MemberReportListTable
+                    tableData={memberReportData}
                     paginationData={paginationData}
                     onPageChange={handlePageChange}
                     onRowsPerPageChange={handleRowsPerPageChange}
