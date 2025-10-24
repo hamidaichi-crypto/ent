@@ -50,7 +50,7 @@ const MemberList = () => {
         startDate: string
         endDate: string
     }>({
-        username: 'dibloo',
+        username: '',
         startDate: defaultStartDate, // Set default start date
         endDate: defaultEndDate // Set default end date
     })
@@ -137,7 +137,7 @@ const MemberList = () => {
             endDate: defaultEndDate
         })
         setTriggerFetch(true)
-        // setPaginationData(prev => ({ ...prev, current_page: 1 }))
+        setPaginationData(prev => ({ ...prev, current_page: 1 }))
     }
 
     if (loading) {
@@ -158,8 +158,8 @@ const MemberList = () => {
                     onRowsPerPageChange={handleRowsPerPageChange}
                     filters={filters}
                     onFilterChange={handleFilterChange}
-                    onClear={handleClear}
                     onSearch={handleSearch} // Pass handleSearch to WithdrawalListTable
+                    onClear={handleClear} // Pass handleSearch to WithdrawalListTable
                 />
             </Grid>
         </Grid>

@@ -3,7 +3,9 @@ export type MemberReportType = {
     id: number
     currency_code: string | null
     game_provider_code: string | null
+    member_account_id: number | null
     username: string | null
+    merchant: number | null,
     dummy: number | null
     game_account: string | null
     total_number_of_transfer_in: number
@@ -35,4 +37,20 @@ export type MemberReportType = {
     total_withdrawal_processing_fee: number
     total_turnover: number
     net_game_revenue: number
+}
+
+export type GameResultType = {
+    ticket_id: string;
+    ticket_time: string;
+    settlement_time: string;
+    game_type: string;
+    game_name: string;
+    bet_amount: string;
+    win_lose: string;
+    valid_bet: string;
+    transaction_status: string;
+    game_round_no: number;
+    is_trigger_free_spin: boolean;
+    is_buy_free_spin: boolean;
+    result_url: string | null;
 }

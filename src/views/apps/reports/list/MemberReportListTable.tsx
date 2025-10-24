@@ -42,7 +42,7 @@ import type { RankingInfo } from '@tanstack/match-sorter-utils'
 
 // Type Imports
 import type { ThemeColor } from '@core/types'
-import type { MemberReportType } from '@/types/apps/memberReportTypes'
+import type { MemberReportType, GameResultType } from '@/types/apps/memberReportTypes'
 import type { Locale } from '@configs/i18n'
 
 // Component Imports
@@ -136,6 +136,203 @@ type PaginationData = {
     total: number
 }
 
+const formatCurrency = (amount: number | string | null | undefined, alignRight: boolean = true) => {
+    if (amount === null || amount === undefined) {
+        return <Typography variant="body2" sx={{ textAlign: alignRight ? 'right' : 'left', color: 'text.primary' }}>0.00</Typography>;
+    }
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+    if (isNaN(num)) {
+        return <Typography variant="body2" sx={{ textAlign: alignRight ? 'right' : 'left', color: 'text.primary' }}>0.00</Typography>;
+    }
+    const color = num < 0 ? 'error.main' : 'text.primary';
+    return <Typography variant="body2" sx={{ textAlign: alignRight ? 'right' : 'left', color: color }}>{num.toFixed(2)}</Typography>;
+};
+
+// --- User Game Result Modal ---
+const UserGameResultModal = ({
+    username,
+    userId,
+    gameProviderCode,
+    gameAccount,
+    open,
+    startDate,
+    endDate,
+    onClose
+}: {
+    username: string | null
+    userId: number | null
+    gameProviderCode: string | null
+    gameAccount: string | null
+    startDate: string | null
+    endDate: string | null
+    open: boolean
+    onClose: () => void
+}) => {
+    const [gameResults, setGameResults] = useState<GameResultType[]>([])
+    const [loading, setLoading] = useState(false)
+    const [error, setError] = useState<string | null>(null)
+    const [pagination, setPagination] = useState({
+        pageIndex: 0,
+        pageSize: 30
+    })
+    const [total, setTotal] = useState(0)
+    const fetchData = useFetchData()
+
+    // Fetch game results when modal opens
+    useEffect(() => {
+        const loadGameResults = async () => {
+            if (!username || !open) return
+            setLoading(true)
+            setError(null)
+            try {
+                const page = pagination.pageIndex + 1
+                const perPage = pagination.pageSize
+                const response =
+                    await fetchData(`/members/game_results?username=${username}&start_date=${startDate}&end_date=${endDate}&user_id=${userId}&game_provider_code=${gameProviderCode}&page=${page}`)
+                setGameResults(response?.data?.rows || [])
+                setTotal(response?.data?.paginations?.total || 0)
+            } catch (err) {
+                console.error(err)
+                setError('Failed to load game results.')
+            } finally {
+                setLoading(false)
+            }
+        }
+        loadGameResults()
+    }, [username, open, fetchData, pagination.pageIndex, pagination.pageSize])
+
+    const gameResultColumnHelper = createColumnHelper<GameResultType>()
+
+    const gameResultColumns = useMemo<ColumnDef<GameResultType, any>[]>(() => [
+        gameResultColumnHelper.accessor('ticket_id', { header: 'Ticket ID', cell: ({ row }) => <Typography variant="body2">{row.original.ticket_id}</Typography>, size: 120 }),
+        gameResultColumnHelper.accessor('ticket_time', { header: 'Ticket Time', cell: ({ row }) => <Typography variant="body2">{formatDateTime(row.original.ticket_time)}</Typography>, size: 150 }),
+        gameResultColumnHelper.accessor('settlement_time', { header: 'Settlement Time', cell: ({ row }) => <Typography variant="body2">{formatDateTime(row.original.settlement_time)}</Typography>, size: 150 }),
+        gameResultColumnHelper.accessor('game_type', { header: 'Game Type', cell: ({ row }) => <Typography variant="body2">{row.original.game_type}</Typography>, size: 100 }),
+        gameResultColumnHelper.accessor('game_name', { header: 'Game Name', cell: ({ row }) => <Typography variant="body2">{row.original.game_name}</Typography>, size: 150 }),
+        gameResultColumnHelper.accessor('bet_amount', { header: 'Bet Amount', cell: ({ row }) => formatCurrency(row.original.bet_amount), size: 100 }),
+        gameResultColumnHelper.accessor('win_lose', { header: 'Win/Lose', cell: ({ row }) => formatCurrency(row.original.win_lose), size: 100 }),
+        gameResultColumnHelper.accessor('valid_bet', { header: 'Valid Bet', cell: ({ row }) => formatCurrency(row.original.valid_bet), size: 100 }),
+        gameResultColumnHelper.accessor('transaction_status', { header: 'Status', cell: ({ row }) => <Typography variant="body2">{row.original.transaction_status}</Typography>, size: 100 }),
+        gameResultColumnHelper.accessor('game_round_no', { header: 'Game Round No', cell: ({ row }) => <Typography variant="body2">{row.original.game_round_no}</Typography>, size: 120 }),
+        gameResultColumnHelper.accessor('is_trigger_free_spin', { header: 'Trigger Free Spin', cell: ({ row }) => <Typography variant="body2">{row.original.is_trigger_free_spin ? 'Yes' : 'No'}</Typography>, size: 120 }),
+        gameResultColumnHelper.accessor('is_buy_free_spin', { header: 'Buy Free Spin', cell: ({ row }) => <Typography variant="body2">{row.original.is_buy_free_spin ? 'Yes' : 'No'}</Typography>, size: 120 }),
+        gameResultColumnHelper.accessor('result_url', {
+            header: 'Result URL',
+            cell: ({ row }) => row.original.result_url ? (
+                <Button
+                    variant="contained"
+                    color="primary"
+                    size="small"
+                // onClick={() => window.open(row.original.result_url, '_blank')}
+                >
+                    Details
+                </Button>
+            ) : (
+                '-'
+            )
+        })
+    ], [])
+
+    const table = useReactTable({
+        data: gameResults,
+        columns: gameResultColumns,
+        filterFns: { fuzzy: fuzzyFilter },
+        getCoreRowModel: getCoreRowModel(),
+        getSortedRowModel: getSortedRowModel(),
+        getFilteredRowModel: getFilteredRowModel(),
+        getPaginationRowModel: getPaginationRowModel(),
+        manualPagination: true,
+        pageCount: Math.ceil(total / pagination.pageSize),
+        onPaginationChange: setPagination,
+        state: {
+            pagination
+        },
+    })
+
+    return (
+        <Dialog
+            open={open}
+            onClose={onClose}
+            fullWidth
+            maxWidth="xl"
+            sx={{ '& .MuiDialog-paper': { height: '80vh' } }}
+        >
+            <DialogTitle className="flex justify-between items-center">
+                {gameProviderCode} Bet Logs: {username} | {gameAccount} | {startDate} - {endDate}
+                <IconButton onClick={onClose} className="absolute block-start-4 inline-end-4">
+                    <i className="ri-close-line" />
+                </IconButton>
+            </DialogTitle>
+
+            <Divider />
+
+            <DialogContent sx={{ pb: 4 }}>
+                {loading ? (
+                    <Typography>Loading...</Typography>
+                ) : error ? (
+                    <Typography color="error">{error}</Typography>
+                ) : gameResults.length === 0 ? (
+                    <Typography>No game results found.</Typography>
+                ) : (
+                    <>
+                        <Typography variant="h6" sx={{ mb: 2 }}>
+                            Detailed Bet Histories
+                        </Typography>
+                        <div className="overflow-x-auto">
+                            <table className={tableStyles.table}>
+                                <thead>
+                                    {table.getHeaderGroups().map(headerGroup => (
+                                        <tr key={headerGroup.id}>
+                                            {headerGroup.headers.map(header => (
+                                                <th key={header.id}>
+                                                    {header.isPlaceholder ? null : (
+                                                        <div
+                                                            className={classnames({
+                                                                'flex items-center': header.column.getIsSorted(),
+                                                                'cursor-pointer select-none': header.column.getCanSort()
+                                                            })}
+                                                            onClick={header.column.getToggleSortingHandler()}
+                                                        >
+                                                            {flexRender(header.column.columnDef.header, header.getContext())}
+                                                            {{
+                                                                asc: <i className='ri-arrow-up-s-line text-xl' />,
+                                                                desc: <i className='ri-arrow-down-s-line text-xl' />
+                                                            }[header.column.getIsSorted() as 'asc' | 'desc'] ?? null}
+                                                        </div>
+                                                    )}
+                                                </th>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </thead>
+                                <tbody>
+                                    {table.getRowModel().rows.map(row => (
+                                        <tr key={row.id}>
+                                            {row.getVisibleCells().map(cell => (
+                                                <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                                            ))}
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                        <TablePagination
+                            rowsPerPageOptions={[]}
+                            component="div"
+                            className="border-bs"
+                            count={total}
+                            rowsPerPage={pagination.pageSize}
+                            page={pagination.pageIndex}
+                            onPageChange={(_, newPage) => setPagination(prev => ({ ...prev, pageIndex: newPage }))}
+                        />
+                    </>
+                )}
+            </DialogContent>
+        </Dialog>
+    )
+}
+
+
 
 const MemberReportListTable = ({
     tableData,
@@ -170,114 +367,15 @@ const MemberReportListTable = ({
     const [globalFilter, setGlobalFilter] = useState('')
     const [isUserDetailModalOpen, setIsUserDetailModalOpen] = useState(false)
     const [selectedUsername, setSelectedUsername] = useState<string | null>(null)
+    const [selectedUsernameId, setSelectedUsernameId] = useState<number | null>(null)
+    const [selectedGameProviderCode, setSelectedGameProviderCode] = useState<string | null>(null)
+    const [selectedGameAccount, setSelectedGameAccount] = useState<string | null>(null)
+
+
 
     // Hooks
     const { lang: locale } = useParams()
 
-    // const columns = useMemo<ColumnDef<MembersTypeWithAction, any>[]>(
-    //     () => {
-    //         // const registrationDomainColumn = columnHelper.accessor('registration_site', {
-    //         //     header: 'Registration Domain',
-    //         //     cell: ({ row }) => <Typography>{row.original.registration_site}</Typography>,
-    //         // });
-
-    //         // const registrationIpColumn = columnHelper.accessor('registration_ip', {
-    //         //     header: 'Registration IP Address',
-    //         //     cell: ({ row }) => <Typography>{row.original.registration_ip}</Typography>,
-    //         //     meta: {
-    //         //         pinned: 'right'
-    //         //     }
-    //         // });
-
-    //         const otherColumns = [
-    //             columnHelper.accessor('currency_code', {
-    //                 header: 'Currency',
-    //                 cell: ({ row }) => <Typography>{row.original.currency_code}</Typography>
-    //             }),
-    //             columnHelper.accessor('game_provider_code', {
-    //                 header: 'Merchant',
-    //                 cell: ({ row }) => <Typography>{row.original.game_provider_code}</Typography>
-    //             }),
-    //             columnHelper.accessor('username', {
-    //                 header: 'Username',
-    //                 cell: ({ row }) => (
-    //                     <div className='flex items-center gap-0.5'>
-    //                         <IconButton size='small' onClick={() => {
-    //                             setSelectedUsername(row.original.username)
-    //                             setIsUserDetailModalOpen(true)
-    //                         }}>
-    //                             <Typography>{row.original.username}</Typography>
-    //                         </IconButton>
-    //                     </div>
-    //                 ),
-    //                 enableSorting: false,
-    //                 meta: {
-    //                     pinned: 'left'
-    //                 }
-    //             }),
-    //             // columnHelper.accessor('id', {
-    //             //     header: 'Member ID',
-    //             //     cell: ({ row }) => <Typography>{row.original.id}</Typography>
-    //             // }),
-    //             // columnHelper.accessor('username', {
-    //             //     header: 'User Name',
-    //             //     cell: ({ row }) => (
-    //             //         <Typography
-    //             //             className='cursor-pointer'
-    //             //             onClick={() => {
-    //             //                 setSelectedUsername(row.original.username)
-    //             //                 setIsUserDetailModalOpen(true)
-    //             //             }}
-    //             //         >
-    //             //             {row.original.username}
-    //             //         </Typography>
-    //             //     )
-    //             // }),
-    //             // columnHelper.accessor('score', {
-    //             //     header: 'Score',
-    //             //     cell: ({ row }) => <Typography> - </Typography>
-    //             // }),
-    //             // columnHelper.accessor('grade', {
-    //             // }),
-    //             // columnHelper.accessor('mobile', {
-    //             //     header: 'Mobile No',
-    //             //     cell: ({ row }) => <Typography>{row.original.mobile}</Typography>
-    //             // }),
-    //             // columnHelper.accessor('member_group_id', {
-    //             //     header: 'Member Group',
-    //             //     cell: ({ row }) => <Typography>{row.original.member_group_id}</Typography>
-    //             // }),
-    //             // columnHelper.accessor('status', {
-    //             //     header: 'Status',
-    //             //     cell: ({ row }) => <Typography>{row.original.status}</Typography>
-    //             // }),
-    //             // columnHelper.accessor('referrer', {
-    //             //     header: 'Refer By',
-    //             //     cell: ({ row }) => <Typography>{row.original.referrer}</Typography>
-    //             // }),
-    //             // columnHelper.accessor('remark', {
-    //             //     header: 'Remark',
-    //             //     cell: ({ row }) => <Typography> - </Typography>
-    //             // }),
-    //             // columnHelper.accessor('registration_created_at', {
-    //             //     header: 'Registration Date',
-    //             //     cell: ({ row }) => <Typography>{formatDateTime(row.original.registration_created_at)}</Typography>
-    //             // }),
-    //             // columnHelper.accessor('registration_ip', {
-    //             //     header: 'Registration IP Address',
-    //             //     cell: ({ row }) => <Typography>{row.original.registration_ip}</Typography>
-    //             // }),
-    //         ];
-
-    //         return [
-    //             ...otherColumns,
-    //             // registrationDomainColumn, 
-    //             // registrationIpColumn
-    //         ];
-    //     },
-    //     // eslint-disable-next-line react-hooks/exhaustive-deps
-    //     [tableData, locale, isUserDetailModalOpen, selectedUsername] // Added dependencies for modal state
-    // )
 
     const columns = useMemo<ColumnDef<MembersTypeWithAction, any>[]>(
         () => [
@@ -285,26 +383,32 @@ const MemberReportListTable = ({
             {
                 header: 'Currency',
                 accessorKey: 'currency_code',
-                cell: ({ row }) => <Typography>{row.original.currency_code}</Typography>
+                cell: ({ row }) => <Typography variant="body2" sx={{ textAlign: 'center' }}>{row.original.currency_code}</Typography>,
+                size: 80
             },
             {
-                header: 'Merchant',
+                header: 'Game Provider',
                 accessorKey: 'game_provider_code',
-                cell: ({ row }) => <Typography>{row.original.game_provider_code}</Typography>
+                cell: ({ row }) => <Typography variant="body2" sx={{ textAlign: 'center' }}>{row.original.game_provider_code}</Typography>,
+                size: 120
             },
             {
                 header: 'Username',
                 accessorKey: 'username',
+                size: 150,
                 cell: ({ row }) => (
                     <Typography
+                        variant="body2"
                         className='cursor-pointer'
                         onClick={() => {
                             setSelectedUsername(row.original.username)
+                            setSelectedUsernameId(row.original.member_account_id)
+                            setSelectedGameProviderCode(row.original.game_provider_code)
+                            setSelectedGameAccount(row.original.game_account)
                             setIsUserDetailModalOpen(true)
                         }}
-                    >
-                        {row.original.username}
-                    </Typography>
+                        sx={{ color: 'primary.main', '&:hover': { textDecoration: 'underline' }, textAlign: 'center' }}
+                    >{row.original.game_account}</Typography>
                 )
             },
 
@@ -315,22 +419,26 @@ const MemberReportListTable = ({
                     {
                         header: 'Total In Count',
                         accessorKey: 'total_in_count',
-                        cell: ({ row }) => <Typography>{row.original.total_number_of_transfer_in}</Typography>
+                        cell: ({ row }) => <Typography variant="body2" sx={{ textAlign: 'right' }}>{row.original.total_number_of_transfer_in}</Typography>, // Assuming count is integer, no decimal formatting
+                        size: 120
                     },
                     {
                         header: 'Total In Amount',
                         accessorKey: 'total_in_amount',
-                        cell: ({ row }) => <Typography>{row.original.total_transfer_in_amount}</Typography>
+                        cell: ({ row }) => formatCurrency(row.original.total_transfer_in_amount),
+                        size: 120
                     },
                     {
                         header: 'Total Out Count',
                         accessorKey: 'total_out_count',
-                        cell: ({ row }) => <Typography>{row.original.total_number_of_transfer_out}</Typography>
+                        cell: ({ row }) => <Typography variant="body2" sx={{ textAlign: 'right' }}>{row.original.total_number_of_transfer_out}</Typography>, // Assuming count is integer
+                        size: 120
                     },
                     {
                         header: 'Total Out Amount',
                         accessorKey: 'total_out_amount',
-                        cell: ({ row }) => <Typography>{row.original.total_transfer_out_amount}</Typography>
+                        cell: ({ row }) => formatCurrency(row.original.total_transfer_out_amount),
+                        size: 120
                     }
                 ]
             },
@@ -342,12 +450,14 @@ const MemberReportListTable = ({
                     {
                         header: 'Total Deposit Count',
                         accessorKey: 'total_deposit_count',
-                        cell: ({ row }) => <Typography>{row.original.total_number_of_deposit}</Typography>
+                        cell: ({ row }) => <Typography variant="body2" sx={{ textAlign: 'right' }}>{row.original.total_number_of_deposit}</Typography>, // Assuming count is integer
+                        size: 120
                     },
                     {
                         header: 'Total Deposit Amount',
                         accessorKey: 'total_deposit_amount',
-                        cell: ({ row }) => <Typography>{row.original.total_deposit}</Typography>
+                        cell: ({ row }) => formatCurrency(row.original.total_deposit),
+                        size: 120
                     }
                 ]
             },
@@ -359,12 +469,14 @@ const MemberReportListTable = ({
                     {
                         header: 'Total Withdrawal Count',
                         accessorKey: 'total_withdrawal_count',
-                        cell: ({ row }) => <Typography>{row.original.total_number_of_withdrawal}</Typography>
+                        cell: ({ row }) => <Typography variant="body2" sx={{ textAlign: 'right' }}>{row.original.total_number_of_withdrawal}</Typography>, // Assuming count is integer
+                        size: 120
                     },
                     {
                         header: 'Total Withdrawal Amount',
                         accessorKey: 'total_withdrawal_amount',
-                        cell: ({ row }) => <Typography>{row.original.total_withdrawal}</Typography>
+                        cell: ({ row }) => formatCurrency(row.original.total_withdrawal),
+                        size: 120
                     }
                 ]
             },
@@ -376,17 +488,20 @@ const MemberReportListTable = ({
                     {
                         header: 'Total Cash Out Fee',
                         accessorKey: 'total_cash_out_fee',
-                        cell: ({ row }) => <Typography>{row.original.total_cashout_fee}</Typography>
+                        cell: ({ row }) => formatCurrency(row.original.total_cashout_fee),
+                        size: 120
                     },
                     {
                         header: 'Total Deposit Processing Fee',
                         accessorKey: 'total_deposit_processing_fee',
-                        cell: ({ row }) => <Typography>{row.original.total_deposit_processing_fee}</Typography>
+                        cell: ({ row }) => formatCurrency(row.original.total_deposit_processing_fee),
+                        size: 150
                     },
                     {
                         header: 'Total Withdrawal Processing Fee',
                         accessorKey: 'total_withdrawal_processing_fee',
-                        cell: ({ row }) => <Typography>{row.original.total_withdrawal_processing_fee}</Typography>
+                        cell: ({ row }) => formatCurrency(row.original.total_withdrawal_processing_fee),
+                        size: 150
                     }
                 ]
             },
@@ -398,53 +513,78 @@ const MemberReportListTable = ({
                     {
                         header: 'Total Bet Count',
                         accessorKey: 'total_bet_count',
-                        cell: ({ row }) => <Typography>{row.original.total_bet_count}</Typography>
+                        cell: ({ row }) => <Typography variant="body2" sx={{ textAlign: 'right' }}>{row.original.total_bet_count}</Typography>, // Assuming count is integer
+                        size: 120
                     },
                     {
                         header: 'Total Bet Amount',
                         accessorKey: 'total_bet_amount',
-                        cell: ({ row }) => <Typography>{row.original.total_bet_amount}</Typography>
+                        cell: ({ row }) => formatCurrency(row.original.total_bet_amount),
+                        size: 120
                     },
                     {
                         header: 'Total Valid Bet Amount',
                         accessorKey: 'total_valid_bet_amount',
-                        cell: ({ row }) => <Typography>{row.original.total_valid_bet_amount}</Typography>
+                        cell: ({ row }) => formatCurrency(row.original.total_valid_bet_amount),
+                        size: 120
                     },
                     {
                         header: 'Player W/L',
                         accessorKey: 'player_win_loss',
-                        cell: ({ row }) => <Typography>{row.original.win_lose}</Typography>
+                        cell: ({ row }) => formatCurrency(row.original.win_lose),
+                        size: 120
                     },
                     {
                         header: 'Total Jackpot Contribution',
                         accessorKey: 'total_jackpot_contribution',
-                        cell: ({ row }) => <Typography>{row.original.total_jackpot_contribution}</Typography>
+                        cell: ({ row }) => formatCurrency(row.original.total_jackpot_contribution),
+                        size: 150
                     },
                     {
                         header: 'Total Jackpot Win',
                         accessorKey: 'total_jackpot_win',
-                        cell: ({ row }) => <Typography>{row.original.total_jackpot_win}</Typography>
+                        cell: ({ row }) => formatCurrency(row.original.total_jackpot_win),
+                        size: 120
                     },
                     {
                         header: 'Nett Jackpot',
                         accessorKey: 'nett_jackpot',
-                        cell: ({ row }) => <Typography>{row.original.nett_jackpot}</Typography>
+                        cell: ({ row }) => formatCurrency(row.original.nett_jackpot),
+                        size: 120
                     },
                     {
                         header: 'Game Bet Amount',
                         accessorKey: 'game_bet_amount',
-                        cell: ({ row }) => <Typography>{row.original.game_bet_amount}</Typography>
+                        cell: ({ row }) => formatCurrency(row.original.game_bet_amount),
+                        size: 120
                     },
                     {
                         header: 'Gross Game Revenue (GGR)',
                         accessorKey: 'gross_game_revenue',
-                        cell: ({ row }) => <Typography>{row.original.gross_game_revenue}</Typography>
+                        cell: ({ row }) => formatCurrency(row.original.gross_game_revenue),
+                        size: 150
                     }
                 ]
             }
         ],
         [tableData]
     )
+
+    const groupColors: { [key: string]: string } = {
+        'Transfer': '#e0f2f7', // Light blue
+        'Deposit': '#e8f5e9',  // Light green
+        'Withdrawal': '#ffebee', // Light red
+        'Company Processing Fee': '#fff3e0', // Light orange
+        'Bets': '#f3e5f5', // Light purple
+    };
+
+    const groupTextColors: { [key: string]: string } = {
+        'Transfer': '#01579b', // Darker blue
+        'Deposit': '#2e7d32',  // Darker green
+        'Withdrawal': '#c62828', // Darker red
+        'Company Processing Fee': '#e65100', // Darker orange
+        'Bets': '#6a1b9a', // Darker purple
+    };
 
 
 
@@ -483,41 +623,83 @@ const MemberReportListTable = ({
                 <CardHeader title='Member Report' className='pbe-4' />
                 <TableFilters filters={filters} onFilterChange={onFilterChange} onSearch={onSearch} onClear={onClear} />
                 <Divider />
-                <div className='overflow-x-auto'>
-                    <table className={tableStyles.table}>
+
+                <div className="overflow-x-auto">
+                    <table className={tableStyles.table} style={{ tableLayout: 'fixed' }}>
                         <thead>
                             {table.getHeaderGroups().map(headerGroup => (
                                 <tr key={headerGroup.id}>
-                                    {headerGroup.headers.map(header => (
-                                        <th key={header.id}
-                                            colSpan={header.colSpan}
-                                            style={{
-                                                textAlign: 'center', // 👈 center text horizontally
-                                                verticalAlign: 'middle', // 👈 center vertically if taller
-                                            }}
-                                        >
-                                            {header.isPlaceholder ? null : (
-                                                <>
+                                    {headerGroup.headers.map(header => {
+                                        const columnSize = header.getSize();
+                                        const widthStyle = columnSize ? { width: columnSize, minWidth: columnSize } : undefined;
+
+                                        return (
+                                            <th
+                                                key={header.id}
+                                                colSpan={header.colSpan}
+                                                style={{
+                                                    ...widthStyle,
+                                                    textAlign: 'center',
+                                                    verticalAlign: 'middle',
+                                                    backgroundColor: (() => {
+                                                        if ('columns' in header.column.columnDef && header.column.columnDef.columns && typeof header.column.columnDef.header === 'string') {
+                                                            return groupColors[header.column.columnDef.header as string] || 'inherit';
+                                                        } else {
+                                                            const parentGroupHeader = header.column.parent?.columnDef?.header;
+                                                            if (typeof parentGroupHeader === 'string') {
+                                                                return groupColors[parentGroupHeader] || 'inherit';
+                                                            }
+                                                        }
+                                                        return 'inherit';
+                                                    })(),
+                                                    color: (() => {
+                                                        if ('columns' in header.column.columnDef && header.column.columnDef.columns && typeof header.column.columnDef.header === 'string') {
+                                                            return groupTextColors[header.column.columnDef.header as string] || 'inherit';
+                                                        } else {
+                                                            const parentGroupHeader = header.column.parent?.columnDef?.header;
+                                                            if (typeof parentGroupHeader === 'string') {
+                                                                return groupTextColors[parentGroupHeader] || 'inherit';
+                                                            }
+                                                        }
+                                                        return 'inherit';
+                                                    })(),
+                                                    borderRight: (() => {
+                                                        const parentGroupHeader = header.column.parent?.columnDef?.header;
+                                                        if ('columns' in header.column.columnDef && header.column.columnDef.columns && typeof header.column.columnDef.header === 'string') {
+                                                            return '2px solid #fff';
+                                                        } else if (typeof parentGroupHeader === 'string') {
+                                                            const groupColumns = header.column.parent?.columns || [];
+                                                            const isLastInGroup = groupColumns[groupColumns.length - 1].id === header.column.id;
+                                                            return isLastInGroup ? '2px solid #fff' : '1px solid rgba(0,0,0,0.1)';
+                                                        }
+                                                        return '1px solid rgba(0,0,0,0.1)';
+                                                    })()
+                                                }}
+                                            >
+                                                {header.isPlaceholder ? null : (
                                                     <div
                                                         className={classnames({
-                                                            'flex items-center': header.column.getIsSorted(),
-                                                            'cursor-pointer select-none': header.column.getCanSort()
+                                                            'flex items-center justify-center gap-1': true,
+                                                            'cursor-pointer select-none': header.column.getCanSort(),
                                                         })}
                                                         onClick={header.column.getToggleSortingHandler()}
                                                     >
-                                                        {flexRender(header.column.columnDef.header, header.getContext())}
+                                                        <span style={{ whiteSpace: 'normal', lineHeight: '1.2' }}>
+                                                            {flexRender(header.column.columnDef.header, header.getContext())}
+                                                        </span>
                                                         {{
                                                             asc: <i className='ri-arrow-up-s-line text-xl' />,
-                                                            desc: <i className='ri-arrow-down-s-line text-xl' />
+                                                            desc: <i className='ri-arrow-down-s-line text-xl' />,
                                                         }[header.column.getIsSorted() as 'asc' | 'desc'] ?? null}
                                                     </div>
-                                                </>
-                                            )}
-                                        </th>
-                                    ))}
+                                                )}
+                                            </th>
+                                        );
+                                    })}
                                 </tr>
                             ))}
                         </thead>
+
                         {table.getRowModel().rows.length === 0 ? (
                             <tbody>
                                 <tr>
@@ -528,21 +710,24 @@ const MemberReportListTable = ({
                             </tbody>
                         ) : (
                             <tbody>
-                                {table
-                                    .getRowModel()
-                                    .rows.map(row => {
-                                        return (
-                                            <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
-                                                {row.getVisibleCells().map(cell => (
-                                                    <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
-                                                ))}
-                                            </tr>
-                                        )
-                                    })}
+                                {table.getRowModel().rows.map(row => (
+                                    <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
+                                        {row.getVisibleCells().map(cell => {
+                                            const columnSize = cell.column.getSize();
+                                            const widthStyle = columnSize ? { width: columnSize, minWidth: columnSize } : undefined;
+                                            return (
+                                                <td key={cell.id} style={widthStyle}>
+                                                    {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                                                </td>
+                                            );
+                                        })}
+                                    </tr>
+                                ))}
                             </tbody>
                         )}
                     </table>
                 </div>
+
                 <TablePagination
                     rowsPerPageOptions={[10, 25, 50]}
                     component='div'
@@ -559,6 +744,19 @@ const MemberReportListTable = ({
                     onRowsPerPageChange={e => onRowsPerPageChange(Number(e.target.value))}
                 />
             </Card>
+            <UserGameResultModal
+                username={selectedUsername}
+                userId={selectedUsernameId}
+                startDate={filters.startDate}
+                endDate={filters.endDate}
+                gameProviderCode={selectedGameProviderCode}
+                gameAccount={selectedGameAccount}
+                open={isUserDetailModalOpen}
+                onClose={() => {
+                    setIsUserDetailModalOpen(false)
+                    setSelectedUsername(null)
+                }}
+            />
         </>
     )
 }

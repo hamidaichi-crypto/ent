@@ -737,12 +737,14 @@ const MemberListTable = ({
         () => {
             const registrationDomainColumn = columnHelper.accessor('registration_site', {
                 header: 'Registration Domain',
-                cell: ({ row }) => <Typography>{row.original.registration_site}</Typography>,
+                cell: ({ row }) => <Typography sx={{ textAlign: 'center', whiteSpace: 'normal', wordBreak: 'break-word' }}>{row.original.registration_site}</Typography>,
+                size: 350,
             });
 
             const registrationIpColumn = columnHelper.accessor('registration_ip', {
                 header: 'Registration IP Address',
-                cell: ({ row }) => <Typography>{row.original.registration_ip}</Typography>,
+                cell: ({ row }) => <Typography sx={{ whiteSpace: 'normal', wordBreak: 'break-word' }}>{row.original.registration_ip}</Typography>,
+                size: 300,
                 meta: {
                     pinned: 'right'
                 }
@@ -763,19 +765,22 @@ const MemberListTable = ({
                         </div>
                     ),
                     enableSorting: false,
+                    size: 80,
                     meta: {
                         pinned: 'left'
                     }
                 }),
                 columnHelper.accessor('id', {
                     header: 'Member ID',
-                    cell: ({ row }) => <Typography>{row.original.id}</Typography>
+                    cell: ({ row }) => <Typography>{row.original.id}</Typography>,
+                    size: 100
                 }),
                 columnHelper.accessor('username', {
                     header: 'User Name',
                     cell: ({ row }) => (
                         <Typography
                             className='cursor-pointer'
+                            sx={{ color: 'primary.main', '&:hover': { textDecoration: 'underline' }, textAlign: 'center' }}
                             onClick={() => {
                                 setSelectedUsername(row.original.username)
                                 setSelectedUser(row.original)
@@ -784,41 +789,46 @@ const MemberListTable = ({
                         >
                             {row.original.username}
                         </Typography>
-                    )
+                    ),
+                    size: 150
                 }),
                 columnHelper.accessor('score', {
                     header: 'Score',
-                    cell: ({ row }) => <Typography> - </Typography>
+                    cell: ({ row }) => <Typography> - </Typography>,
+                    size: 80
                 }),
                 columnHelper.accessor('grade', {
+                    size: 80
                 }),
                 columnHelper.accessor('mobile', {
                     header: 'Mobile No',
-                    cell: ({ row }) => <Typography>{row.original.mobile}</Typography>
+                    cell: ({ row }) => <Typography>{row.original.mobile}</Typography>,
+                    size: 150
                 }),
                 columnHelper.accessor('member_group_id', {
                     header: 'Member Group',
-                    cell: ({ row }) => <Typography>{row.original.member_group_id}</Typography>
+                    cell: ({ row }) => <Typography>{row.original.member_group_id}</Typography>,
+                    size: 120
                 }),
                 columnHelper.accessor('status', {
                     header: 'Status',
-                    cell: ({ row }) => <Typography>{row.original.status}</Typography>
+                    cell: ({ row }) => <Typography>{row.original.status}</Typography>,
+                    size: 100
                 }),
                 columnHelper.accessor('referrer', {
                     header: 'Refer By',
-                    cell: ({ row }) => <Typography>{row.original.referrer}</Typography>
+                    cell: ({ row }) => <Typography>{row.original.referrer}</Typography>,
+                    size: 120
                 }),
                 columnHelper.accessor('remark', {
                     header: 'Remark',
-                    cell: ({ row }) => <Typography> - </Typography>
+                    cell: ({ row }) => <Typography> - </Typography>,
+                    size: 150
                 }),
                 columnHelper.accessor('registration_created_at', {
                     header: 'Registration Date',
-                    cell: ({ row }) => <Typography>{formatDateTime(row.original.registration_created_at)}</Typography>
-                }),
-                columnHelper.accessor('registration_ip', {
-                    header: 'Registration IP Address',
-                    cell: ({ row }) => <Typography>{row.original.registration_ip}</Typography>
+                    cell: ({ row }) => <Typography sx={{ textAlign: 'center' }}>{formatDateTime(row.original.registration_created_at)}</Typography>,
+                    size: 200
                 }),
             ];
 
@@ -885,17 +895,17 @@ const MemberListTable = ({
                     </div>
                 </div> */}
                 <div className='overflow-x-auto'>
-                    <table className={tableStyles.table}>
+                    <table className={tableStyles.table} style={{ tableLayout: 'fixed' }}>
                         <thead>
                             {table.getHeaderGroups().map(headerGroup => (
                                 <tr key={headerGroup.id}>
                                     {headerGroup.headers.map(header => (
-                                        <th key={header.id}>
+                                        <th key={header.id} style={{ textAlign: 'center', width: header.getSize() }}>
                                             {header.isPlaceholder ? null : (
                                                 <>
                                                     <div
                                                         className={classnames({
-                                                            'flex items-center': header.column.getIsSorted(),
+                                                            'flex items-center justify-center': header.column.getIsSorted(),
                                                             'cursor-pointer select-none': header.column.getCanSort()
                                                         })}
                                                         onClick={header.column.getToggleSortingHandler()}
@@ -929,7 +939,7 @@ const MemberListTable = ({
                                         return (
                                             <tr key={row.id} className={classnames({ selected: row.getIsSelected() })}>
                                                 {row.getVisibleCells().map(cell => (
-                                                    <td key={cell.id}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
+                                                    <td key={cell.id} style={{ width: cell.column.getSize() }}>{flexRender(cell.column.columnDef.cell, cell.getContext())}</td>
                                                 ))}
                                             </tr>
                                         )
