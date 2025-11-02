@@ -30,7 +30,9 @@ export const authOptions: NextAuthOptions = {
             },
             async authorize(credentials) {
                 try {
-                    const externalLoginApiUrl = 'https://xpi.machibo.com/api/auth/login';
+                    // const externalLoginApiUrl = 'https://xpi.machibo.com/api/auth/login';
+                    const externalLoginApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`;
+                    console.log("externalLoginApiUrl", externalLoginApiUrl)
 
                     const response = await fetch(externalLoginApiUrl, {
                         method: 'POST',
