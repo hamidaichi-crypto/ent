@@ -28,7 +28,7 @@ jobs:
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             export PATH=$PATH:$(npm bin -g)
 
-            cd /var/www/nmcbbo-webapp
+            cd /var/www/web
 
             echo "🌀 Fetching latest code..."
             git fetch --all
