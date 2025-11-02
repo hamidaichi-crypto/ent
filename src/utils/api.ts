@@ -4,7 +4,8 @@ import { useSession, signOut } from 'next-auth/react'
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 
-const BASE_URL = 'https://xpi.machibo.com/api'
+// const BASE_URL = 'https://xpi.machibo.com/api'
+const BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL
 
 export const useFetchData = () => {
     const { data: session, status } = useSession()

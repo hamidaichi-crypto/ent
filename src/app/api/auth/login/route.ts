@@ -5,7 +5,8 @@ export async function POST(request: NextRequest) {
         const { username, password } = await request.json();
 
         // External login API URL provided by the user
-        const externalLoginApiUrl = 'https://xpi.machibo.com/api/auth/login';
+        // const externalLoginApiUrl = 'https://xpi.machibo.com/api/auth/login';
+        const externalLoginApiUrl = `${process.env.NEXT_PUBLIC_API_BASE_URL}/auth/login`;
         const response = await fetch(externalLoginApiUrl, {
             method: 'POST',
             headers: {
