@@ -11,23 +11,37 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.7.0
         with:
-          ssh-private-key: ${{ secrets.DEPLOY_KEY }}
+          ssh-private-key: ${{ secrets.SSH_KEY }}
 
       - name: Deploy to Server
+        env:
+          SSH_USER: ${{ secrets.SSH_USER }}
+          SSH_HOST: ${{ secrets.SSH_HOST }}
         run: |
-          ssh -o StrictHostKeyChecking=no deploy@3.6.17.4 << 'EOF'
-             export NVM_DIR="$HOME/.nvm"
+          ssh -o StrictHostKeyChecking=no $SSH_USER@$SSH_HOST << 'EOF'
+            export NVM_DIR="$HOME/.nvm"
             [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
             export PATH=$PATH:$(npm bin -g)
-            cd /var/www/nmcbbo-webapp
+
+            cd /var/www/web
+
+            echo "🌀 Fetching latest code..."
             git fetch --all
             git reset --hard origin/main
+
+            echo "📦 Installing dependencies..."
             npm install --production=false
+
+            echo "🏗️  Building Next.js app..."
             npm run build
-            pm2 reload nmcbbo-webapp
+
+            echo "🔁 Restarting PM2 process..."
+            pm2 reload nmcbbo-webapp || pm2 start npm --name "nmcbbo-webapp" -- start
+
+            echo "✅ Deployment complete!"
           EOF
