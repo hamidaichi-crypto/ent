@@ -71,6 +71,21 @@ export interface BankTransaction {
     // add other nested fields if needed
 }
 
+export interface CrossBettingTransaction {
+    member_account_id: string;
+    username: string;
+    game_provider_code: string;
+    game_round_no: string;
+    game_code: string;
+    game_name: string;
+    game_type: string;
+    bet_type: string;
+    bet_choice: string;
+    bet_amount: string;
+    ticket_time: string;
+    // add other nested fields if needed
+}
+
 export interface Transaction {
     id: number;
     amount: string;
