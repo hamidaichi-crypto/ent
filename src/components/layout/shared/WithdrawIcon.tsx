@@ -9,19 +9,23 @@ import IconButton from '@mui/material/IconButton'
 
 // Utils Imports
 import { useFetchData } from '@/utils/api'
+import { useSession } from 'next-auth/react'
 
 const WithdrawIcon = () => {
     const [pendingCount, setPendingCount] = useState(0)
     const fetchData = useFetchData()
+    const { data: session, status } = useSession()
 
     const fetchPendingWithdrawals = async () => {
+        if (status !== 'authenticated' || !session?.user?.accessToken) {
+            return
+        }
+
         try {
             // We only care about the count, so we can ask for a single item.
             const data = await fetchData('/withdrawals?per_page=1&status%5B0%5D=PENDING')
-            console.log(data)
 
             if (data?.data?.paginations?.total) {
-                console.log(data?.data?.paginations?.total)
                 setPendingCount(data.data.paginations.total)
             }
         } catch (error) {
@@ -30,14 +34,16 @@ const WithdrawIcon = () => {
     }
 
     useEffect(() => {
-        fetchPendingWithdrawals()
+        if (status === 'authenticated') {
+            fetchPendingWithdrawals()
 
-        // Set up an interval to refetch the count every minute
-        const interval = setInterval(fetchPendingWithdrawals, 60000)
+            // Set up an interval to refetch the count every minute
+            const interval = setInterval(fetchPendingWithdrawals, 30000)
 
-        // Cleanup interval on component unmount
-        return () => clearInterval(interval)
-    }, [fetchData])
+            // Cleanup interval on component unmount
+            return () => clearInterval(interval)
+        }
+    }, [status, session, fetchData])
 
     return (
         <IconButton className='text-textPrimary'>
