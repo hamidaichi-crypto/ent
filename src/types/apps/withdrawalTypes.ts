@@ -56,7 +56,8 @@ export type WithdrawalType = {
     grade: string, // not available
     confirm_account: string, // not available
     handler: string // not available    
-    risk_profile: risk_profile
+    risk_profile: risk_profile,
+    cross_bettings_count: number
 
     //   avatarColor?: ThemeColor
 }
