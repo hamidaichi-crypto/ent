@@ -56,7 +56,8 @@ export type WithdrawalType = {
     grade: string, // not available
     confirm_account: string, // not available
     handler: string // not available    
-    risk_profile: risk_profile
+    risk_profile: risk_profile,
+    cross_bettings_count: number
 
     //   avatarColor?: ThemeColor
 }
@@ -67,6 +68,21 @@ export interface BankTransaction {
     merchant_bank: string;
     merchant_bank_account: string;
     processing_fee: string;
+    // add other nested fields if needed
+}
+
+export interface CrossBettingTransaction {
+    member_account_id: string;
+    username: string;
+    game_provider_code: string;
+    game_round_no: string;
+    game_code: string;
+    game_name: string;
+    game_type: string;
+    bet_type: string;
+    bet_choice: string;
+    bet_amount: string;
+    ticket_time: string;
     // add other nested fields if needed
 }
 
