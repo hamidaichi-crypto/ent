@@ -42,7 +42,7 @@ import FormHelperText from '@mui/material/FormHelperText'
 
 // Type Imports
 import type { ThemeColor } from '@core/types'
-import type { WithdrawalType, BankTransaction } from '@/types/apps/withdrawalTypes'
+import type { WithdrawalType, BankTransaction, CrossBettingTransaction } from '@/types/apps/withdrawalTypes'
 import { Transaction } from '@/types/apps/withdrawalTypes'
 import type { Locale } from '@configs/i18n'
 
@@ -138,6 +138,109 @@ const getAccountNumber = (accountInfo: string | undefined) => {
     return parts[parts.length - 1].trim();
 }
 
+const CrossBettingsDialog = ({ open, onClose, withdrawal }: { open: boolean, onClose: () => void, withdrawal: WithdrawalTypeWithAction | null }) => {
+    const [crossBettingsData, setCrossBettingsData] = useState<CrossBettingTransaction[]>([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState<string | null>(null);
+    const fetchData = useFetchData();
+
+    useEffect(() => {
+        const fetchCrossBettings = async () => {
+            if (!open || !withdrawal) {
+                return;
+            }
+
+            setLoading(true);
+            setError(null);
+            setCrossBettingsData([]);
+
+            try {
+                const queryString = `/withdrawals/cross_betting?member_account_id=${withdrawal.member_id}&withdrawal_id=${withdrawal.id}`;
+                const response = await fetchData(queryString);
+
+                setCrossBettingsData(Array.isArray(response.data?.cross_bets) ? response.data.cross_bets : []);
+            } catch (err) {
+                console.error('Failed to fetch cross bettings:', err);
+                setError('Failed to load cross bettings data.');
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchCrossBettings();
+    }, [open, withdrawal, fetchData]);
+
+    if (!withdrawal) {
+        return null;
+    }
+
+    return (
+        <Dialog open={open} onClose={onClose} fullWidth maxWidth="xl">
+            <DialogTitle>Cross Bettings for {withdrawal.username}</DialogTitle>
+            <IconButton onClick={onClose} className="absolute block-start-4 inline-end-4">
+                <i className="ri-close-line" />
+            </IconButton>
+            <Divider />
+            <DialogContent>
+                {loading && <Typography>Loading...</Typography>}
+                {/* --- Cross Betting Transaction Section --- */}
+                {!loading &&
+                    <Box p={2} mt={3}>
+                        <h4>Cross Betting Transaction Data</h4>
+                        {/* Transaction Table */}
+                        <Table size="small">
+                            <TableHead>
+                                <TableRow>
+                                    <TableCell>Member Account ID</TableCell>
+                                    <TableCell>Username</TableCell>
+                                    <TableCell>Game Provider Code</TableCell>
+                                    <TableCell>Game Round No</TableCell>
+                                    <TableCell>Game Code</TableCell>
+                                    <TableCell>game_name</TableCell>
+                                    <TableCell>game_type</TableCell>
+                                    <TableCell>bet_type</TableCell>
+                                    <TableCell>bet_choice</TableCell>
+                                    <TableCell>bet_amount</TableCell>
+                                    <TableCell>ticket_time</TableCell>
+                                </TableRow>
+                            </TableHead>
+                            <TableBody>
+                                {crossBettingsData.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell colSpan={11} align="center">
+                                            No data available
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    crossBettingsData.map((t, index) => (
+                                        <TableRow key={index}>
+                                            <TableCell>{t.member_account_id}</TableCell>
+                                            <TableCell>{t.username}</TableCell>
+                                            <TableCell>{t.game_provider_code}</TableCell>
+                                            <TableCell>{t.game_round_no}</TableCell>
+                                            <TableCell>{t.game_code}</TableCell>
+                                            <TableCell>{t.game_name}</TableCell>
+                                            <TableCell>{t.game_type}</TableCell>
+                                            <TableCell>{t.bet_type}</TableCell>
+                                            <TableCell>{t.bet_choice}</TableCell>
+                                            <TableCell>{t.bet_amount}</TableCell>
+                                            <TableCell>{t.ticket_time}</TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </Box>
+                }
+                {error && <Typography color="error">{error}</Typography>}
+                {/* {crossBettingsData && <pre>{JSON.stringify(crossBettingsData, null, 2)}</pre>} */}
+
+            </DialogContent>
+            <DialogActions><Button onClick={onClose}>Close</Button></DialogActions>
+        </Dialog>
+    );
+};
+
 const WithdrawalListTable = ({
     tableData,
     paginationData,
@@ -154,6 +257,8 @@ const WithdrawalListTable = ({
 
     const [isWithdrawDetailModalOpen, setIsWithdrawDetailModalOpen] = useState(false)
     const [selectedWithdrawal, setSelectedWithdrawal] = useState<WithdrawalTypeWithAction | null>(null)
+    const [isCrossBettingsModalOpen, setIsCrossBettingsModalOpen] = useState(false);
+    const [selectedWithdrawalForBettings, setSelectedWithdrawalForBettings] = useState<WithdrawalTypeWithAction | null>(null);
 
     // Hooks
     const { lang: locale } = useParams()
@@ -163,7 +268,7 @@ const WithdrawalListTable = ({
         const interval = setInterval(() => {
             // This function is passed from the parent and should trigger a data refetch.
             onSearch()
-        }, 60000) // 60000 milliseconds = 1 minute. I've set it back to 1 minute.
+        }, 30000) // 30000 milliseconds = 30 seconds.
 
         // Cleanup function to clear the interval when the component unmounts
         return () => clearInterval(interval)
@@ -207,6 +312,22 @@ const WithdrawalListTable = ({
             columnHelper.accessor('grade', {
                 header: 'Grade',
                 cell: ({ row }) => <Typography>{row.original.grade}</Typography>
+            }),
+            columnHelper.accessor('cross_bettings_count', {
+                header: 'Cross Bettings Count',
+                cell: ({ row }) => (
+                    <Typography
+                        className='cursor-pointer'
+                        onClick={() => {
+                            setSelectedWithdrawalForBettings(row.original);
+                            setIsCrossBettingsModalOpen(true);
+                        }}
+                        sx={{ color: 'primary.main', textDecoration: 'underline' }}
+                    >
+                        {row.original.cross_bettings_count}
+
+                    </Typography>
+                )
             }),
             columnHelper.accessor('status', {
                 header: 'Status',
@@ -366,7 +487,7 @@ const WithdrawalListTable = ({
                     </table>
                 </div>
                 <TablePagination
-                    rowsPerPageOptions={[10, 25, 50]}
+                    rowsPerPageOptions={[10, 30, 50]}
                     component='div'
                     className='border-bs'
                     count={paginationData.total}
@@ -388,6 +509,14 @@ const WithdrawalListTable = ({
                     setIsWithdrawDetailModalOpen(false)
                     setSelectedWithdrawal(null)
                 }}
+            />
+            <CrossBettingsDialog
+                open={isCrossBettingsModalOpen}
+                onClose={() => {
+                    setIsCrossBettingsModalOpen(false);
+                    setSelectedWithdrawalForBettings(null);
+                }}
+                withdrawal={selectedWithdrawalForBettings}
             />
             {/* <AddUserDrawer
                 open={addUserOpen}
