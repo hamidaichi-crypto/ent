@@ -18,6 +18,7 @@ import { getLocalizedUrl } from '@/utils/i18n'
 
 const WithdrawIcon = () => {
     const [pendingCount, setPendingCount] = useState(0)
+    const [isMuted, setIsMuted] = useState(true)
     const [hasInteracted, setHasInteracted] = useState(false)
     const audioRef = useRef<HTMLAudioElement | null>(null)
     const fetchData = useFetchData()
@@ -31,14 +32,25 @@ const WithdrawIcon = () => {
     // On the client-side, create the Audio object.
     // I'm assuming the sound file will be moved to the `public/sounds/` directory.
     useEffect(() => {
+        const savedMuteState = localStorage.getItem('isWithdrawalSoundMuted')
+        const initialMuteState = savedMuteState ? JSON.parse(savedMuteState) : false
+
+        setIsMuted(initialMuteState)
         audioRef.current = new Audio('/sounds/notification-sound.mp3')
-        audioRef.current.muted = true; // Mute by default
-        document.addEventListener('click', () => {
+        audioRef.current.muted = initialMuteState
+
+        const handleFirstInteraction = () => {
             setHasInteracted(true);
-            if (audioRef.current) {
-                audioRef.current.muted = false;
+            if (audioRef.current && !initialMuteState) {
+                audioRef.current.muted = false
             }
-        }, { once: true });
+        }
+
+        document.addEventListener('click', handleFirstInteraction, { once: true });
+
+        return () => {
+            document.removeEventListener('click', handleFirstInteraction)
+        }
     }, [])
 
     const handleClick = useCallback(() => {
@@ -49,25 +61,51 @@ const WithdrawIcon = () => {
         }
     }, [router, pathname, locale])
 
+    const handleMuteToggle = useCallback(() => {
+        const newMutedState = !isMuted
+
+        setIsMuted(newMutedState)
+        localStorage.setItem('isWithdrawalSoundMuted', JSON.stringify(newMutedState))
+        if (audioRef.current) {
+            audioRef.current.muted = newMutedState
+        }
+    }, [isMuted])
+
     const fetchPendingWithdrawals = async () => {
         if (status !== 'authenticated' || !session?.user?.accessToken) {
-            return
+            return;
         }
 
         try {
             // We only care about the count, so we can ask for a single item.
-            const data = await fetchData('/withdrawals?per_page=1&status%5B0%5D=PENDING')
+            const data = await fetchData('/withdrawals?per_page=100&status%5B0%5D=PENDING');
 
-            const newTotal = data?.data?.paginations?.total
+            const newRows = data?.data?.rows || [];
+            const newIds = newRows.map((w: any) => w.id.toString());
+            const newTotal = data?.data?.paginations?.total || 0;
 
-            if (hasInteracted && audioRef.current && newTotal > 0) {
-                audioRef.current?.play().catch(e => console.error('Error playing sound:', e))
+            const storedIdsString = localStorage.getItem('pendingWithdrawalIds');
+            const storedIds = storedIdsString ? JSON.parse(storedIdsString) : [];
+
+            console.log("storedIds", storedIds)
+            console.log("newIds", newIds)
+            // Check if there are any new IDs in the fetched data that were not in storage.
+            const hasNewWithdrawals = newIds.some((id: string) => !storedIds.includes(id));
+
+            console.log("hasNewWithdrawals", hasNewWithdrawals)
+            console.log("isMuted", isMuted)
+
+            if (hasInteracted && !isMuted && hasNewWithdrawals && audioRef.current) {
+                console.log("PLAY SOUND")
+                audioRef.current?.play().catch(e => console.error('Error playing sound:', e));
             }
 
-            setPendingCount(newTotal || 0)
-            previousPendingCount.current = newTotal || 0;
+            // Update localStorage with the new list of IDs.
+            localStorage.setItem('pendingWithdrawalIds', JSON.stringify(newIds));
+
+            setPendingCount(newTotal);
         } catch (error) {
-            console.error('Failed to fetch pending withdrawal count:', error)
+            console.error('Failed to fetch pending withdrawal count:', error);
         }
     }
 
@@ -76,7 +114,7 @@ const WithdrawIcon = () => {
             fetchPendingWithdrawals()
 
             // Set up an interval to refetch the count 30 seconds
-            const interval = setInterval(fetchPendingWithdrawals, 50000)
+            const interval = setInterval(fetchPendingWithdrawals, 30000)
 
             // Cleanup interval on component unmount
             return () => clearInterval(interval)
@@ -84,11 +122,16 @@ const WithdrawIcon = () => {
     }, [status, session, fetchData])
 
     return (
-        <IconButton className='text-textPrimary' onClick={handleClick}>
-            <Badge badgeContent={pendingCount} color='primary' max={99}>
-                <i className='ri-upload-2-line' />
-            </Badge>
-        </IconButton>
+        <>
+            <IconButton className='text-textPrimary' onClick={handleClick}>
+                <Badge badgeContent={pendingCount} color='primary' max={99}>
+                    <i className='ri-upload-2-line' />
+                </Badge>
+            </IconButton>
+            <IconButton className='text-textPrimary' onClick={handleMuteToggle}>
+                <i className={isMuted ? 'ri-volume-mute-line' : 'ri-volume-up-line'} />
+            </IconButton>
+        </>
     )
 }
 
