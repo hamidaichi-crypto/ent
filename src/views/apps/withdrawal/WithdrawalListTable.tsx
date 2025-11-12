@@ -583,24 +583,17 @@ const UserWithdrawalModal = ({
   const handleAddTransaction = () => {
     setTransactionRow({}); // Use an empty object to indicate the form is open
     reset({
+      amount: withdrawal?.confirmed_amount ? parseFloat(withdrawal.confirmed_amount) : null,
+      remark: '',
       withdraw_id: null,
-      amount: null,
       member_account_id: null,
       bank_account_id: null,
       merchant_bank_id: null,
-      remark: ''
-      // bank_id: null,
-      // amount: '',
-      // remark: '',
-      // fee_total: 0,
-      // feeCompany: '', 
-      // feePlayer: '', 
-      // receipt: null
     });
   };
 
   const onApproveSubmit = async (data: any) => {
-    const selectedBank = bankList.find(bank => bank.id === data.bank_id);
+    const selectedBank = bankList.find(bank => bank.id === data.merchant_bank_id);
     const newTransaction = {
       ...data,
       merchant_bank_account: selectedBank ? selectedBank.name : ''
@@ -614,6 +607,8 @@ const UserWithdrawalModal = ({
       merchant_bank_id: selectedBank?.id, // Placeholder, adjust as needed
       remarks: newTransaction.remark || "Approved by user" // Use remark from state
     };
+
+    console.log("body", body)
 
     try {
       await postData(`/withdrawals/approve`, body);
@@ -687,6 +682,9 @@ const UserWithdrawalModal = ({
     <>
       <Dialog open={open} onClose={onClose} fullWidth maxWidth="xl">
         <DialogTitle>Withdrawal Details</DialogTitle>
+        <IconButton onClick={onClose} className='absolute block-start-4 inline-end-4'>
+          <i className='ri-close-line' />
+        </IconButton>
         {withdrawal && (
           <>
             <DialogContent>
@@ -815,7 +813,7 @@ const UserWithdrawalModal = ({
                     onClick={handleAddTransaction}
                     sx={{ mb: 2 }}
                   >
-                    Add Transaction 1
+                    Add Transaction
                   </Button>
                 )}
 
@@ -852,6 +850,7 @@ const UserWithdrawalModal = ({
                       <Controller
                         name="amount"
                         control={control}
+                        defaultValue={parseFloat(withdrawal?.confirmed_amount || '0') || null}
                         rules={{ required: true, min: 0.01 }}
                         render={({ field }) => (
                           <TextField
