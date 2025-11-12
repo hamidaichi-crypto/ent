@@ -528,6 +528,15 @@ const WithdrawalListTable = ({
   )
 }
 
+type FormDataType = {
+  withdraw_id: number | null;
+  amount: number | null;
+  member_account_id: number | null;
+  bank_account_id: string | null;
+  merchant_bank_id: number | null;
+  remark: string;
+};
+
 
 // --- User Withdrawal Modal Component ---
 const UserWithdrawalModal = ({
@@ -545,7 +554,7 @@ const UserWithdrawalModal = ({
     handleSubmit,
     reset,
     formState: { errors }
-  } = useForm({
+  } = useForm<FormDataType>({
     // Initialize with empty or null values
     defaultValues: {
       withdraw_id: null,
@@ -583,12 +592,7 @@ const UserWithdrawalModal = ({
   const handleAddTransaction = () => {
     setTransactionRow({}); // Use an empty object to indicate the form is open
     reset({
-      amount: withdrawal?.confirmed_amount ? parseFloat(withdrawal.confirmed_amount) : null,
-      remark: '',
-      withdraw_id: null,
-      member_account_id: null,
-      bank_account_id: null,
-      merchant_bank_id: null,
+      amount: withdrawal?.confirmed_amount ? parseFloat(withdrawal.confirmed_amount) : null
     });
   };
 
