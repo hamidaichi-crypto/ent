@@ -16,6 +16,7 @@ const navigationCustomStyles = (verticalNavOptions: VerticalNavState, theme: The
   const collapsedNotHovered = isCollapsed && !isHovered
 
   return {
+    boxShadow: 'var(--mui-customShadows-md)',
     color: 'var(--mui-palette-text-primary)',
     zIndex: 'var(--drawer-z-index) !important',
     [`& .${verticalNavClasses.header}`]: {
