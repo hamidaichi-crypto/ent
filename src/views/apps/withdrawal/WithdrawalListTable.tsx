@@ -43,7 +43,7 @@ import FormHelperText from '@mui/material/FormHelperText'
 
 // Type Imports
 import type { ThemeColor } from '@core/types'
-import type { WithdrawalType, BankTransaction, CrossBettingTransaction } from '@/types/apps/withdrawalTypes'
+import type { WithdrawalType, BankTransaction, CrossBettingTransaction, PgLog } from '@/types/apps/withdrawalTypes'
 import { Transaction } from '@/types/apps/withdrawalTypes'
 import type { Locale } from '@configs/i18n'
 
@@ -553,6 +553,8 @@ const UserWithdrawalModal = ({
   const [error, setError] = useState<string | null>(null)
   const [bankList, setBankList] = useState<{ id: number; name: string }[]>([])
 
+  const [pgLogs, setPgLogs] = useState<PgLog[]>([])
+  const [bankTransactions, setBankTransactions] = useState<BankTransaction[]>([])
   const {
     control,
     handleSubmit,
@@ -670,6 +672,35 @@ const UserWithdrawalModal = ({
       // Fetch the list of banks when the modal is opened
       loadBankList()
       setTransactionRow(null); // Ensure form is hidden on open
+
+      const fetchDetails = async () => {
+        if (withdrawal && (withdrawal.status === 1 || withdrawal.status === 2)) {
+          try {
+            setIsSubmitting(true)
+            const response = await fetchData(`/withdrawals/details/${withdrawal.id}`)
+
+            if (response.status === 1 && response.data?.withdrawal?.pg_logs) {
+              console.log("response", response)
+              setPgLogs(response.data.withdrawal.pg_logs)
+              setBankTransactions(response.data.withdrawal.bank_transactions)
+            } else {
+              setPgLogs([])
+              setBankTransactions([])
+            }
+          } catch (err) {
+            console.error('Failed to fetch withdrawal details:', err)
+            setPgLogs([])
+            setBankTransactions([])
+          } finally {
+            setIsSubmitting(false)
+          }
+        } else {
+          setPgLogs([])
+          setBankTransactions([])
+        }
+      }
+
+      fetchDetails()
     }
   }, [open])
 
@@ -840,6 +871,58 @@ const UserWithdrawalModal = ({
                   </Button>
                 </Box>
               </Box>
+
+
+              {/* --- Payment gateway callback log Section --- */}
+              {(withdrawal.status === 1 || withdrawal.status === 2) && (
+                <Box border={1} borderRadius={2} p={2} mt={3}>
+                  <h4>Payment Gateway Callback Log</h4>
+                  <Table size="small">
+                    <TableHead>
+                      <TableRow>
+                        <TableCell>Callback ID</TableCell>
+                        <TableCell>Transaction ID</TableCell>
+                        <TableCell>Status</TableCell>
+                        <TableCell>Payment JSON</TableCell>
+                        <TableCell>Callback Time</TableCell>
+                      </TableRow>
+                    </TableHead>
+                    <TableBody>
+                      {isSubmitting ? (
+                        <TableRow>
+                          <TableCell colSpan={6} align="center">
+                            <CircularProgress />
+                          </TableCell>
+                        </TableRow>
+                      ) : pgLogs.length === 0 ? (
+                        <TableRow>
+                          <TableCell colSpan={6} align="center">
+                            No data available
+                          </TableCell>
+                        </TableRow>
+                      ) : (
+                        pgLogs.map(log => (
+                          <TableRow key={log.id}>
+                            <TableCell>{log.id}</TableCell>
+                            <TableCell>{log.transaction_id}</TableCell>
+                            <TableCell>
+                              <Chip
+                                label={log.status_label}
+                                size="small"
+                                variant="tonal"
+                                color={log.status_label === 'Rejected' ? 'error' : 'success'}
+                              />
+                            </TableCell>
+                            <TableCell sx={{ maxWidth: 300, wordBreak: 'break-all' }}>{log.payment_json}</TableCell>
+                            <TableCell>{formatDateTime(log.created_at)}</TableCell>
+                          </TableRow>
+                        ))
+                      )}
+                    </TableBody>
+                  </Table>
+                </Box>
+              )}
+
 
               {/* --- Bank Transaction Section --- */}
               <Box border={1} borderRadius={2} p={2} mt={3}>
@@ -1021,34 +1104,42 @@ const UserWithdrawalModal = ({
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {transactions.length === 0 ? (
+
+
+                    {isSubmitting ? (
                       <TableRow>
-                        <TableCell colSpan={11} align="center">
+                        <TableCell colSpan={12} align="center">
+                          <CircularProgress />
+                        </TableCell>
+                      </TableRow>
+                    ) : bankTransactions.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={12} align="center">
                           No data available
                         </TableCell>
                       </TableRow>
                     ) : (
-                      transactions.map((t, index) => (
+                      bankTransactions.map((t, index) => (
                         <TableRow key={index}>
                           <TableCell>{index + 1}</TableCell>
-                          <TableCell>{t.merchant_bank_account}</TableCell>
-                          <TableCell>{withdrawal.amount}</TableCell>
+                          <TableCell>{t.merchant_bank}</TableCell>
+                          <TableCell>{parseFloat(t.amount).toFixed(2)}</TableCell>
                           <TableCell>
                             <Box display="flex" flexDirection="column">
                               <Box display="flex" justifyContent="space-between">
                                 <strong>Player:</strong>
-                                <span>{withdrawal.member_processing_fee}</span>
+                                <span>{parseFloat(t.member_processing_fee).toFixed(2)}</span>
                               </Box>
                               <Box display="flex" justifyContent="space-between">
                                 <span>Company:</span>
-                                <span>{withdrawal.processing_fee}</span>
+                                <span>{parseFloat(t.processing_fee).toFixed(2)}</span>
                               </Box>
                               <Box display="flex" justifyContent="space-between">
                                 <span>Total:</span>
                                 <span>
                                   {(
-                                    parseFloat(withdrawal.processing_fee || "0") +
-                                    parseFloat(withdrawal.member_processing_fee || "0")
+                                    parseFloat(t.processing_fee || "0") +
+                                    parseFloat(t.member_processing_fee || "0")
                                   ).toFixed(2)}
                                 </span>
                               </Box>
@@ -1057,11 +1148,11 @@ const UserWithdrawalModal = ({
                           </TableCell>
                           <TableCell>{withdrawal.confirmed_amount}</TableCell>
                           <TableCell>-</TableCell>
-                          <TableCell>{withdrawal.status_name}</TableCell>
+                          <TableCell>{t.status_name}</TableCell>
                           <TableCell>-</TableCell>
-                          <TableCell>-</TableCell>
-                          <TableCell>-</TableCell>
-                          <TableCell>-</TableCell>
+                          <TableCell>{t.transaction_remarks}</TableCell>
+                          <TableCell>{t.created_by}</TableCell>
+                          <TableCell>{t.updated_by}</TableCell>
                         </TableRow>
                       ))
                     )}
@@ -1084,27 +1175,8 @@ const UserWithdrawalModal = ({
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {/* Example rows */}
-                    {/* <TableRow>
-                                    <TableCell>345659</TableCell>
-                                    <TableCell>Withdrawal</TableCell>
-                                    <TableCell sx={{ color: "red" }}>-600.00</TableCell>
-                                    <TableCell>-</TableCell>
-                                    <TableCell>-</TableCell>
-                                    <TableCell>kumar775<br />2025-09-19 09:25</TableCell>
-                                    <TableCell>rlee6988<br />2025-09-19 09:25</TableCell>
-                                </TableRow>
-                                <TableRow>
-                                    <TableCell>1539435</TableCell>
-                                    <TableCell>Deposit</TableCell>
-                                    <TableCell sx={{ color: "green" }}>300.00</TableCell>
-                                    <TableCell>DepSL-ap6-9-141531-20250918151011</TableCell>
-                                    <TableCell>-</TableCell>
-                                    <TableCell>kumar775<br />2025-09-18 23:10</TableCell>
-                                    <TableCell>-<br />2025-09-18 23:11</TableCell>
-                                </TableRow> */}
                     <TableRow>
-                      <TableCell colSpan={6} align="center">
+                      <TableCell colSpan={8} align="center">
                         No data available
                       </TableCell>
 
@@ -1124,7 +1196,7 @@ const UserWithdrawalModal = ({
             </DialogContent>
 
             {/* Fixed bottom actions */}
-            {withdrawal.status !== 1 && (
+            {withdrawal.status == 0 && (
               <DialogActions sx={{ justifyContent: "flex-start", p: 2 }}>
                 <Button
                   variant="contained"
