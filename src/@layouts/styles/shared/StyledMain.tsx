@@ -11,13 +11,28 @@ type StyledMainProps = {
   isContentCompact: boolean
 }
 
+// const StyledMain = styled.main<StyledMainProps>`
+//   padding: ${themeConfig.layoutPadding}px;
+//   ${({ isContentCompact }) =>
+//     isContentCompact &&
+//     `
+//     margin-inline: auto;
+//     max-inline-size: ${themeConfig.compactContentWidth}px;
+//   `}
+
+//   &:has(.${commonLayoutClasses.contentHeightFixed}) {
+//     display: flex;
+//     overflow: hidden;
+//   }
+// `
+
+
 const StyledMain = styled.main<StyledMainProps>`
   padding: ${themeConfig.layoutPadding}px;
   ${({ isContentCompact }) =>
     isContentCompact &&
     `
     margin-inline: auto;
-    max-inline-size: ${themeConfig.compactContentWidth}px;
   `}
 
   &:has(.${commonLayoutClasses.contentHeightFixed}) {
