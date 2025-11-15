@@ -41,6 +41,11 @@ import type { WithdrawalType, BankTransaction, PgLog } from '@/types/apps/withdr
 import { formatDateTime } from '@/utils/dateFormatter'
 import { useFetchData, usePostData } from '@/utils/api'
 
+// Component Imports
+import TransactionInfo from './components/TransactionInfo'
+import PgCallbackLog from './components/PgCallbackLog'
+import BankTransactionSection from './components/BankTransactionSection'
+
 type WithdrawalTypeWithAction = WithdrawalType & {
   action?: string
 }
@@ -134,7 +139,7 @@ const UserWithdrawalModal = ({
       member_account_id: withdrawal?.member_id,
       bank_account_id: getAccountNumber(withdrawal?.member_bank_account),
       merchant_bank_id: selectedBank?.id,
-      remarks: newTransaction.remark || 'Approved by user'
+      remarks: newTransaction.remark || ''
     }
 
     try {
@@ -330,239 +335,27 @@ const UserWithdrawalModal = ({
               </Grid>
 
               {/* Transaction Info */}
-              <Box border={1} borderRadius={2} p={2} mt={3}>
-                <h4>Transaction Info</h4>
-                <Table size='small'>
-                  <TableBody>
-                    <TableRow>
-                      <TableCell>ID</TableCell>
-                      <TableCell>W{withdrawal.id}</TableCell>
-                      <TableCell>Created At</TableCell>
-                      <TableCell>{formatDateTime(withdrawal.created_at)}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Status</TableCell>
-                      <TableCell>
-                        <Chip
-                          label={withdrawal.status_name}
-                          color={
-                            withdrawal.status === 0
-                              ? 'default'
-                              : withdrawal.status === 1
-                                ? 'success'
-                                : withdrawal.status === 2
-                                  ? 'error'
-                                  : 'warning'
-                          }
-                          variant='tonal'
-                        />
-                      </TableCell>
-                      <TableCell>Confirmed Amount</TableCell>
-                      <TableCell>{withdrawal.confirmed_amount}</TableCell>
-                    </TableRow>
-                    <TableRow>
-                      <TableCell>Processing Date</TableCell>
-                      <TableCell>{formatDateTime(withdrawal.processing_time)}</TableCell>
-                      <TableCell>Handler</TableCell>
-                      <TableCell>{withdrawal.approved_by}</TableCell>
-                    </TableRow>
-                  </TableBody>
-                </Table>
-
-                <Box mt={2}>
-                  <TextField label='Remark' variant='outlined' fullWidth size='small' />
-                  <Button variant='contained' color='primary' sx={{ mt: 2 }}>
-                    Update
-                  </Button>
-                </Box>
-              </Box>
+              <TransactionInfo withdrawal={withdrawal} />
 
               {/* --- Payment gateway callback log Section --- */}
               {(withdrawal.status === 1 || withdrawal.status === 2) && (
-                <Box border={1} borderRadius={2} p={2} mt={3}>
-                  <h4>Payment Gateway Callback Log</h4>
-                  <Table size='small'>
-                    <TableHead>
-                      <TableRow>
-                        <TableCell>Callback ID</TableCell>
-                        <TableCell>Transaction ID</TableCell>
-                        <TableCell>Status</TableCell>
-                        <TableCell>Payment JSON</TableCell>
-                        <TableCell>Callback Time</TableCell>
-                      </TableRow>
-                    </TableHead>
-                    <TableBody>
-                      {isSubmitting ? (
-                        <TableRow>
-                          <TableCell colSpan={6} align='center'>
-                            <CircularProgress />
-                          </TableCell>
-                        </TableRow>
-                      ) : pgLogs.length === 0 ? (
-                        <TableRow>
-                          <TableCell colSpan={6} align='center'>
-                            No data available
-                          </TableCell>
-                        </TableRow>
-                      ) : (
-                        pgLogs.map(log => (
-                          <TableRow key={log.id}>
-                            <TableCell>{log.id}</TableCell>
-                            <TableCell>{log.transaction_id}</TableCell>
-                            <TableCell>
-                              <Chip
-                                label={log.status_label}
-                                size='small'
-                                variant='tonal'
-                                color={log.status_label === 'Rejected' ? 'error' : 'success'}
-                              />
-                            </TableCell>
-                            <TableCell sx={{ maxWidth: 300, wordBreak: 'break-all' }}>{log.payment_json}</TableCell>
-                            <TableCell>{formatDateTime(log.created_at)}</TableCell>
-                          </TableRow>
-                        ))
-                      )}
-                    </TableBody>
-                  </Table>
-                </Box>
+                <PgCallbackLog pgLogs={pgLogs} isSubmitting={isSubmitting} />
               )}
 
               {/* --- Bank Transaction Section --- */}
-              <Box border={1} borderRadius={2} p={2} mt={3}>
-                <h4>Bank Transaction</h4>
-
-                {withdrawal.status === 0 && (
-                  <Button
-                    variant='contained'
-                    color='primary'
-                    disabled={!!transactionRow} // disable when editing
-                    onClick={handleAddTransaction}
-                    sx={{ mb: 2 }}
-                  >
-                    Add Transaction
-                  </Button>
-                )}
-
-                {transactionRow && (
-                  <form onSubmit={handleSubmit(onApproveSubmit)}>
-                    <Box display='flex' gap={2} alignItems='flex-start' mb={2}>
-                      <FormControl fullWidth error={!!errors.merchant_bank_id} sx={{ width: '250px' }}>
-                        <Controller
-                          name='merchant_bank_id'
-                          control={control}
-                          rules={{ required: true }}
-                          render={({ field }) => (
-                            <Select {...field} displayEmpty sx={{ minWidth: 50 }} value={field.value || ''}>
-                              <MenuItem value=''>Please Select</MenuItem>
-                              {bankList.map(bank => (
-                                <MenuItem key={bank.id} value={bank.id}>
-                                  {bank.name}
-                                </MenuItem>
-                              ))}
-                            </Select>
-                          )}
-                        />
-                        {errors.merchant_bank_id && <FormHelperText error>Please select a bank.</FormHelperText>}
-                      </FormControl>
-
-                      <Controller
-                        name='amount'
-                        control={control}
-                        defaultValue={parseFloat(withdrawal?.confirmed_amount || '0') || null}
-                        rules={{ required: true, min: 0.01 }}
-                        render={({ field }) => (
-                          <TextField
-                            {...field}
-                            label='Amount'
-                            {...(errors.amount
-                              ? {
-                                error: true,
-                                helperText:
-                                  errors.amount.type === 'min' ? 'Amount must be greater than 0.' : 'This field is required.'
-                              }
-                              : {})}
-                          />
-                        )}
-                      />
-
-                      <Controller name='remark' control={control} render={({ field }) => <TextField {...field} label='Remark' />} />
-
-                      <Button variant='contained' color='success' type='submit' disabled={isSubmitting}>
-                        {isSubmitting ? <CircularProgress size={24} color='inherit' /> : 'Approve'}
-                      </Button>
-                      <Button variant='contained' color='warning' onClick={handleRemove} disabled={isSubmitting}>
-                        Remove
-                      </Button>
-                    </Box>
-                  </form>
-                )}
-
-                <Table size='small'>
-                  <TableHead>
-                    <TableRow>
-                      <TableCell>ID</TableCell>
-                      <TableCell>Bank</TableCell>
-                      <TableCell>Amount</TableCell>
-                      <TableCell>Processing Fee</TableCell>
-                      <TableCell>Confirmed Amount</TableCell>
-                      <TableCell>Receipt</TableCell>
-                      <TableCell>Status</TableCell>
-                      <TableCell>References</TableCell>
-                      <TableCell>Remarks</TableCell>
-                      <TableCell>Created By</TableCell>
-                      <TableCell>Updated By</TableCell>
-                    </TableRow>
-                  </TableHead>
-                  <TableBody>
-                    {isSubmitting ? (
-                      <TableRow>
-                        <TableCell colSpan={12} align='center'>
-                          <CircularProgress />
-                        </TableCell>
-                      </TableRow>
-                    ) : bankTransactions.length === 0 ? (
-                      <TableRow>
-                        <TableCell colSpan={12} align='center'>
-                          No data available
-                        </TableCell>
-                      </TableRow>
-                    ) : (
-                      bankTransactions.map((t, index) => (
-                        <TableRow key={t.id}>
-                          <TableCell>{t.id}</TableCell>
-                          <TableCell>{t.merchant_bank}</TableCell>
-                          <TableCell>{parseFloat(t.amount).toFixed(2)}</TableCell>
-                          <TableCell>
-                            <Box display='flex' flexDirection='column'>
-                              <Box display='flex' justifyContent='space-between'>
-                                <strong>Player:</strong>
-                                <span>{parseFloat(t.member_processing_fee).toFixed(2)}</span>
-                              </Box>
-                              <Box display='flex' justifyContent='space-between'>
-                                <span>Company:</span>
-                                <span>{parseFloat(t.processing_fee).toFixed(2)}</span>
-                              </Box>
-                              <Box display='flex' justifyContent='space-between'>
-                                <span>Total:</span>
-                                <span>
-                                  {(parseFloat(t.processing_fee || '0') + parseFloat(t.member_processing_fee || '0')).toFixed(2)}
-                                </span>
-                              </Box>
-                            </Box>
-                          </TableCell>
-                          <TableCell>{withdrawal.confirmed_amount}</TableCell>
-                          <TableCell>-</TableCell>
-                          <TableCell>{t.status_name}</TableCell>
-                          <TableCell>{t.pg_reference_id}</TableCell>
-                          <TableCell>{t.transaction_remarks}</TableCell>
-                          <TableCell>{t.created_by}</TableCell>
-                          <TableCell>{t.updated_by || '-'}</TableCell>
-                        </TableRow>
-                      ))
-                    )}
-                  </TableBody>
-                </Table>
-              </Box>
+              <BankTransactionSection
+                withdrawal={withdrawal}
+                bankTransactions={bankTransactions}
+                isSubmitting={isSubmitting}
+                transactionRow={transactionRow}
+                handleAddTransaction={handleAddTransaction}
+                handleSubmit={handleSubmit}
+                onApproveSubmit={onApproveSubmit}
+                control={control}
+                errors={errors}
+                bankList={bankList}
+                handleRemove={handleRemove}
+              />
 
               <Box border={1} borderRadius={2} p={2} mt={3}>
                 <h4>Past Transactions</h4>
