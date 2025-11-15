@@ -139,7 +139,7 @@ const UserWithdrawalModal = ({
       member_account_id: withdrawal?.member_id,
       bank_account_id: getAccountNumber(withdrawal?.member_bank_account),
       merchant_bank_id: selectedBank?.id,
-      remarks: newTransaction.remark || ''
+      remarks: newTransaction.remark || null
     }
 
     try {
