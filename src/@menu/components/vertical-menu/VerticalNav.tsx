@@ -51,7 +51,7 @@ export type VerticalNavProps = HTMLAttributes<HTMLHtmlElement> & {
 const VerticalNav = (props: VerticalNavProps) => {
   // Props
   const {
-    width = 260,
+    width = 200,
     collapsedWidth = 80,
     defaultCollapsed = false,
     backgroundColor = 'white',
@@ -194,14 +194,14 @@ const VerticalNav = (props: VerticalNavProps) => {
         className={verticalNavClasses.container}
         transitionDuration={transitionDurationContext}
         {
-          // eslint-disable-next-line lines-around-comment
-          /* Toggle verticalNav on hover only when isPopoutWhenCollapsedContext(default false) is false */
-          ...(!isPopoutWhenCollapsedContext &&
-            isCollapsedContext &&
-            !breakpointReached && {
-              onMouseEnter: handleVerticalNavHover,
-              onMouseLeave: handleVerticalNavHoverOut
-            })
+        // eslint-disable-next-line lines-around-comment
+        /* Toggle verticalNav on hover only when isPopoutWhenCollapsedContext(default false) is false */
+        ...(!isPopoutWhenCollapsedContext &&
+          isCollapsedContext &&
+          !breakpointReached && {
+          onMouseEnter: handleVerticalNavHover,
+          onMouseLeave: handleVerticalNavHoverOut
+        })
         }
       >
         {/* VerticalNav Container to apply styling like background */}
