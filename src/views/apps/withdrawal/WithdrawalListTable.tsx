@@ -36,6 +36,7 @@ import {
 } from '@tanstack/react-table'
 import type { ColumnDef, FilterFn } from '@tanstack/react-table'
 import type { RankingInfo } from '@tanstack/match-sorter-utils'
+import { toast } from 'react-toastify'
 import DialogAddNewWithdrawal from './DialogAddNewWithdrawal'
 import { useForm, Controller } from 'react-hook-form'
 import FormHelperText from '@mui/material/FormHelperText'
@@ -59,6 +60,9 @@ import { useFetchData, usePostData } from '@/utils/api'
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
 
+// Third-party Style Imports
+import 'react-toastify/dist/ReactToastify.css'
+
 import Dialog from '@mui/material/Dialog'
 import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
@@ -67,7 +71,7 @@ import DialogActions from "@mui/material/DialogActions";
 
 import {
   Tabs, Tab, Box, Grid, Table, TableBody, TableRow, TableCell,
-  Chip, TextField, TableHead, Select, MenuItem, FormControl
+  Chip, TextField, TableHead, Select, MenuItem, FormControl, CircularProgress
 } from "@mui/material";
 
 declare module '@tanstack/table-core' {
@@ -545,7 +549,7 @@ const UserWithdrawalModal = ({
   onClose
 }: { withdrawal: WithdrawalTypeWithAction | null; open: boolean; onClose: () => void }) => {
   // const [userData, setUserData] = useState<MemberType | null>(null)
-  const [loading, setLoading] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [bankList, setBankList] = useState<{ id: number; name: string }[]>([])
 
@@ -615,14 +619,32 @@ const UserWithdrawalModal = ({
     console.log("body", body)
 
     try {
-      await postData(`/withdrawals/approve`, body);
-      setConfirmOpen(false);
-      onClose(); // close main modal
-      setTransactions(prev => [newTransaction, ...prev]);
-      setTransactionRow(null);
-      reset();
+      setIsSubmitting(true);
+
+      const responseData = await postData(`/withdrawals/approve`, body);
+
+      if (responseData.status === -1) {
+        let errorMessage = responseData.message;
+
+        try {
+          const parsedMessage = JSON.parse(errorMessage);
+
+          if (Array.isArray(parsedMessage)) {
+            errorMessage = parsedMessage.join('\n');
+          }
+        } catch (e) {
+          // It's not a JSON string, so we'll use the message as is.
+        }
+        toast.error(errorMessage, { position: 'top-center' });
+      } else {
+        toast.success('Withdrawal approved successfully.', { position: 'top-center' });
+        onClose(); // close main modal
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      toast.error(err instanceof Error ? err.message : 'An unknown error occurred', { position: 'top-center' });
+    } finally {
+      setIsSubmitting(false);
     }
 
   };
@@ -635,7 +657,7 @@ const UserWithdrawalModal = ({
   useEffect(() => {
     if (!open) {
       setError(null)
-      setLoading(false)
+      setIsSubmitting(false)
       // setUserData(null) // clear local state, but keep cache
     }
 
@@ -661,24 +683,38 @@ const UserWithdrawalModal = ({
     }
 
     try {
+      setIsSubmitting(true);
       const body = {
         withdraw_id: withdrawal.id,
-        amount: withdrawal.amount,
-        member_account_id: withdrawal.member_id,
-        // Assuming bank_account_id and merchant_bank_id are available on withdrawal
-        // If not, you might need to adjust where these values come from.
-        // For now, I'll use placeholder values or existing ones.
-        bank_account_id: withdrawal.member_id, // Placeholder, adjust as needed
-        merchant_bank_id: 0, // Placeholder, adjust as needed
         remarks: rejectionRemark || "Rejected by user" // Use remark from state
       };
+      const responseData = await postData(`/withdrawals/reject`, body);
 
-      await postData(`/withdrawals/${withdrawal.id}/reject`, body);
+      console.log("responseData", responseData)
 
-      setConfirmOpen(false);
-      onClose(); // close main modal
+      if (responseData.status === -1) {
+        let errorMessage = responseData.message;
+
+        try {
+          const parsedMessage = JSON.parse(errorMessage);
+
+          if (Array.isArray(parsedMessage)) {
+            errorMessage = parsedMessage.join('\n');
+          }
+        } catch (e) {
+          // It's not a JSON string, so we'll use the message as is.
+        }
+        toast.error(errorMessage, { position: 'top-center' });
+      } else {
+        toast.success('Withdrawal rejected successfully.', { position: 'top-center' });
+        setConfirmOpen(false);
+        onClose(); // close main modal
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An unknown error occurred');
+      toast.error(err instanceof Error ? err.message : 'An unknown error occurred', { position: 'top-center' });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -953,11 +989,15 @@ const UserWithdrawalModal = ({
                                             </Button> */}
 
                       {/* Actions */}
-                      <Button variant="contained" color="success" type="submit">
-                        Approve
+                      <Button variant="contained" color="success" type="submit" disabled={isSubmitting}>
+                        {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Approve'}
                       </Button>
-                      <Button variant="contained" color="warning" onClick={handleRemove}>
+                      <Button
+                        variant="contained" color="warning"
+                        onClick={handleRemove} disabled={isSubmitting}
+                      >
                         Remove
+
                       </Button>
                     </Box>
                   </form>
@@ -1090,6 +1130,7 @@ const UserWithdrawalModal = ({
                   variant="contained"
                   color="error"
                   onClick={() => setConfirmOpen(true)}
+                  disabled={isSubmitting}
                 >
                   Reject
                 </Button>
@@ -1118,9 +1159,9 @@ const UserWithdrawalModal = ({
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)}>Cancel</Button>
-          <Button variant="contained" color="error" onClick={handleReject}>
-            Confirm
+          <Button onClick={() => setConfirmOpen(false)} disabled={isSubmitting}>Cancel</Button>
+          <Button variant="contained" color="error" onClick={handleReject} disabled={isSubmitting}>
+            {isSubmitting ? <CircularProgress size={24} color="inherit" /> : 'Confirm'}
           </Button>
         </DialogActions>
       </Dialog>
