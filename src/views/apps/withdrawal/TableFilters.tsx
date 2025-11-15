@@ -46,10 +46,11 @@ const TableFilters = ({ filters, onFilterChange, onSearch }: TableFiltersProps) 
     <CardContent>
       <Grid container spacing={5}>
         <Grid size={{ xs: 12, sm: 4 }}>
-          <FormControl fullWidth>
+          <FormControl fullWidth size='small'>
             <InputLabel id='status-select'>Select Status</InputLabel>
             <Select
               multiple
+              size='small'
               fullWidth
               id='select-status'
               value={filters.status}
@@ -67,8 +68,9 @@ const TableFilters = ({ filters, onFilterChange, onSearch }: TableFiltersProps) 
             </Select>
           </FormControl>
         </Grid>
-        <Grid size={{ xs: 12, sm: 4 }}>
+        <Grid size={{ xs: 12, sm: 2 }}>
           <TextField
+            size='small'
             fullWidth
             label='Start Date'
             type='date'
@@ -79,8 +81,9 @@ const TableFilters = ({ filters, onFilterChange, onSearch }: TableFiltersProps) 
             }}
           />
         </Grid>
-        <Grid size={{ xs: 12, sm: 4 }}>
+        <Grid size={{ xs: 12, sm: 2 }}>
           <TextField
+            size='small'
             fullWidth
             label='End Date'
             type='date'
@@ -93,7 +96,7 @@ const TableFilters = ({ filters, onFilterChange, onSearch }: TableFiltersProps) 
         </Grid>
         {/* Add Search Button */}
         <Grid size={{ xs: 12, sm: 4 }} sx={{ display: 'flex', alignItems: 'center' }}>
-          <Button variant='contained' onClick={onSearch}>
+          <Button variant='contained' onClick={onSearch} size='small'>
             Search
           </Button>
         </Grid>
