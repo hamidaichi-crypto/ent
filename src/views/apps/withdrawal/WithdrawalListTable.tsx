@@ -428,9 +428,9 @@ const WithdrawalListTable = ({
                     >
                         Export
                     </Button> */}
-          <div className='flex items-center gap-x-4 max-sm:gap-y-4 flex-col max-sm:is-full sm:flex-row'>
+          {/* <div className='flex items-center gap-x-4 max-sm:gap-y-4 flex-col max-sm:is-full sm:flex-row'>
             <DialogAddNewWithdrawal />
-          </div>
+          </div> */}
         </div>
         <div className='overflow-x-auto'>
           <table className={tableStyles.table}>
