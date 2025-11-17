@@ -420,17 +420,6 @@ const WithdrawalListTable = ({
         <TableFilters filters={filters} onFilterChange={onFilterChange} onSearch={onManualSearch} />
         <Divider />
         <div className='flex justify-between gap-4 p-5 flex-col items-start sm:flex-row sm:items-center'>
-          {/* <Button
-                        color='secondary'
-                        variant='outlined'
-                        startIcon={<i className='ri-upload-2-line' />}
-                        className='max-sm:is-full'
-                    >
-                        Export
-                    </Button> */}
-          {/* <div className='flex items-center gap-x-4 max-sm:gap-y-4 flex-col max-sm:is-full sm:flex-row'>
-            <DialogAddNewWithdrawal />
-          </div> */}
         </div>
         <div className='overflow-x-auto'>
           <table className={tableStyles.table}>
@@ -508,6 +497,9 @@ const WithdrawalListTable = ({
         onClose={() => {
           setIsWithdrawDetailModalOpen(false)
           setSelectedWithdrawal(null)
+        }}
+        onReloadTable={() => {
+          onSearch()
         }}
       />
       <CrossBettingsDialog

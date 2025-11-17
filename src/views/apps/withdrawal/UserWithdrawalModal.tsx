@@ -72,11 +72,13 @@ const getAccountNumber = (accountInfo: string | undefined) => {
 const UserWithdrawalModal = ({
   withdrawal,
   open,
-  onClose
+  onClose,
+  onReloadTable
 }: {
   withdrawal: WithdrawalTypeWithAction | null
   open: boolean
   onClose: () => void
+  onReloadTable: () => void
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -168,6 +170,7 @@ const UserWithdrawalModal = ({
       toast.error(err instanceof Error ? err.message : 'An unknown error occurred', { position: 'top-center' })
     } finally {
       setIsSubmitting(false)
+      onReloadTable()
     }
   }
 
