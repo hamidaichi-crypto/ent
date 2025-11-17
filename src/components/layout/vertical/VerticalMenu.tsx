@@ -31,88 +31,96 @@ import menuSectionStyles from '@core/styles/vertical/menuSectionStyles'
 // import menuData from '@/data/navigation/verticalMenuData'
 
 type RenderExpandIconProps = {
-    open?: boolean
-    transitionDuration?: VerticalMenuContextProps['transitionDuration']
+  open?: boolean
+  transitionDuration?: VerticalMenuContextProps['transitionDuration']
 }
 
 type Props = {
-    dictionary: Awaited<ReturnType<typeof getDictionary>>
-    scrollMenu: (container: any, isPerfectScrollbar: boolean) => void
+  dictionary: Awaited<ReturnType<typeof getDictionary>>
+  scrollMenu: (container: any, isPerfectScrollbar: boolean) => void
 }
 
 const RenderExpandIcon = ({ open, transitionDuration }: RenderExpandIconProps) => (
-    <StyledVerticalNavExpandIcon open={open} transitionDuration={transitionDuration}>
-        <i className='ri-arrow-right-s-line' />
-    </StyledVerticalNavExpandIcon>
+  <StyledVerticalNavExpandIcon open={open} transitionDuration={transitionDuration}>
+    <i className='ri-arrow-right-s-line' />
+  </StyledVerticalNavExpandIcon>
 )
 
 const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
-    // Hooks
-    const theme = useTheme()
-    const verticalNavOptions = useVerticalNav()
-    const params = useParams()
+  // Hooks
+  const theme = useTheme()
+  const verticalNavOptions = useVerticalNav()
+  const params = useParams()
 
-    // Vars
-    const { isBreakpointReached, transitionDuration } = verticalNavOptions
-    const { lang: locale } = params
+  // Vars
+  const { isBreakpointReached, transitionDuration } = verticalNavOptions
+  const { lang: locale } = params
 
-    const ScrollWrapper = isBreakpointReached ? 'div' : PerfectScrollbar
+  const ScrollWrapper = isBreakpointReached ? 'div' : PerfectScrollbar
 
-    return (
-        // eslint-disable-next-line lines-around-comment
-        /* Custom scrollbar instead of browser scroll, remove if you want browser scroll only */
-        <ScrollWrapper
-            {...(isBreakpointReached
-                ? {
-                    className: 'bs-full overflow-y-auto overflow-x-hidden',
-                    onScroll: container => scrollMenu(container, false)
-                }
-                : {
-                    options: { wheelPropagation: false, suppressScrollX: true },
-                    onScrollY: container => scrollMenu(container, true)
-                })}
+  return (
+    // eslint-disable-next-line lines-around-comment
+    /* Custom scrollbar instead of browser scroll, remove if you want browser scroll only */
+    <ScrollWrapper
+      {...(isBreakpointReached
+        ? {
+          className: 'bs-full overflow-y-auto overflow-x-hidden',
+          onScroll: container => scrollMenu(container, false)
+        }
+        : {
+          options: { wheelPropagation: false, suppressScrollX: true },
+          onScrollY: container => scrollMenu(container, true)
+        })}
+    >
+      {/* Incase you also want to scroll NavHeader to scroll with Vertical Menu, remove NavHeader from above and paste it below this comment */}
+      {/* Vertical Menu */}
+      <Menu
+        popoutMenuOffset={{ mainAxis: 17 }}
+        menuItemStyles={menuItemStyles(verticalNavOptions, theme)}
+        renderExpandIcon={({ open }) => <RenderExpandIcon open={open} transitionDuration={transitionDuration} />}
+        renderExpandedMenuItemIcon={{ icon: <i className='ri-circle-fill' /> }}
+        menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
+      >
+        <SubMenu
+          label={dictionary['navigation'].dashboards}
+          icon={<i className='ri-home-smile-line' />}
+        // suffix={<Chip label='5' size='small' color='error' />}
         >
-            {/* Incase you also want to scroll NavHeader to scroll with Vertical Menu, remove NavHeader from above and paste it below this comment */}
-            {/* Vertical Menu */}
-            <Menu
-                popoutMenuOffset={{ mainAxis: 17 }}
-                menuItemStyles={menuItemStyles(verticalNavOptions, theme)}
-                renderExpandIcon={({ open }) => <RenderExpandIcon open={open} transitionDuration={transitionDuration} />}
-                renderExpandedMenuItemIcon={{ icon: <i className='ri-circle-fill' /> }}
-                menuSectionStyles={menuSectionStyles(verticalNavOptions, theme)}
-            >
-                <SubMenu
-                    label={dictionary['navigation'].dashboards}
-                    icon={<i className='ri-home-smile-line' />}
-                // suffix={<Chip label='5' size='small' color='error' />}
-                >
-                    <MenuItem href={`/${locale}/dashboards/crm`}>{dictionary['navigation'].crm}</MenuItem>
-                    {/* <MenuItem href={`/${locale}/dashboards/analytics`}>{dictionary['navigation'].analytics}</MenuItem>
+          <MenuItem href={`/${locale}/dashboards/crm`}>{dictionary['navigation'].crm}</MenuItem>
+          {/* <MenuItem href={`/${locale}/dashboards/analytics`}>{dictionary['navigation'].analytics}</MenuItem>
                     <MenuItem href={`/${locale}/dashboards/ecommerce`}>{dictionary['navigation'].eCommerce}</MenuItem>
                     <MenuItem href={`/${locale}/dashboards/academy`}>{dictionary['navigation'].academy}</MenuItem>
                     <MenuItem href={`/${locale}/dashboards/logistics`}>{dictionary['navigation'].logistics}</MenuItem> */}
-                </SubMenu>
-                <MenuSection label="MACHIBET">
-                    <SubMenu label={dictionary['navigation'].member} icon={<i className='ri-user-line' />}>
-                        <MenuItem href={`/${locale}/apps/member/list`}>{dictionary['navigation'].list}</MenuItem>
-                    </SubMenu>
-                </MenuSection>
-                <MenuSection label="PAYMENT">
-                    <MenuItem
-                        href={`/${locale}/apps/withdrawal`}
-                        icon={<i className='ri-upload-2-line' />}
-                        exactMatch={false}
-                        activeUrl='/apps/withdrawal'
-                    >
-                        {dictionary['navigation'].withdrawal}
-                    </MenuItem>
-                </MenuSection>
-                <MenuSection label="REPORT">
-                    <SubMenu label={dictionary['navigation'].report} icon={<i className='ri-user-line' />}>
-                        <MenuItem href={`/${locale}/apps/reports/list`}>{dictionary['navigation'].memberReport}</MenuItem>
-                    </SubMenu>
-                </MenuSection>
-                {/* <MenuSection label={dictionary['navigation'].appsPages}>
+        </SubMenu>
+        <MenuSection label="MACHIBET">
+          <SubMenu label={dictionary['navigation'].member} icon={<i className='ri-user-line' />}>
+            <MenuItem href={`/${locale}/apps/member/list`}>{dictionary['navigation'].list}</MenuItem>
+          </SubMenu>
+        </MenuSection>
+        <MenuSection label="PAYMENT">
+          <MenuItem
+            href={`/${locale}/apps/withdrawal`}
+            icon={<i className='ri-upload-2-line' />}
+            exactMatch={false}
+            activeUrl='/apps/withdrawal'
+          >
+            {dictionary['navigation'].withdrawal}
+          </MenuItem>
+          <MenuItem
+            href={`/${locale}/apps/log-withdrawal`}
+            icon={<i className='ri-history-line' />}
+            exactMatch={false}
+            activeUrl='/apps/log-withdrawal'
+          >
+            {dictionary['navigation'].withdrawalLog}
+          </MenuItem>
+        </MenuSection>
+        <MenuSection label="REPORT">
+          <SubMenu label={dictionary['navigation'].report} icon={<i className='ri-user-line' />}>
+            <MenuItem href={`/${locale}/apps/reports/list`}>{dictionary['navigation'].memberReport}</MenuItem>
+          </SubMenu>
+        </MenuSection>
+        {/* <MenuSection label={dictionary['navigation'].appsPages}>
                     <SubMenu label={dictionary['navigation'].frontPages} icon={<i className='ri-file-copy-line' />}>
                         <MenuItem href='/front-pages/landing-page' target='_blank'>
                             {dictionary['navigation'].landing}
@@ -317,7 +325,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
                         <MenuItem href={`/${locale}/pages/widget-examples/actions`}>{dictionary['navigation'].actions}</MenuItem>
                     </SubMenu>
                 </MenuSection> */}
-                {/* <MenuSection label={dictionary['navigation'].formsAndTables}>
+        {/* <MenuSection label={dictionary['navigation'].formsAndTables}>
                     <MenuItem href={`/${locale}/forms/form-layouts`} icon={<i className='ri-layout-4-line' />}>
                         {dictionary['navigation'].formLayouts}
                     </MenuItem>
@@ -347,7 +355,7 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
                         {dictionary['navigation'].muiTables}
                     </MenuItem>
                 </MenuSection> */}
-                {/* <MenuSection label={dictionary['navigation'].chartsMisc}>
+        {/* <MenuSection label={dictionary['navigation'].chartsMisc}>
                     <SubMenu label={dictionary['navigation'].charts} icon={<i className='ri-bar-chart-2-line' />}>
                         <MenuItem href={`/${locale}/charts/apex-charts`}>{dictionary['navigation'].apex}</MenuItem>
                         <MenuItem href={`/${locale}/charts/recharts`}>{dictionary['navigation'].recharts}</MenuItem>
@@ -413,8 +421,8 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
                         <MenuItem disabled>{dictionary['navigation'].disabledMenu}</MenuItem>
                     </SubMenu>
                 </MenuSection> */}
-            </Menu>
-            {/* <Menu
+      </Menu>
+      {/* <Menu
         popoutMenuOffset={{ mainAxis: 17 }}
         menuItemStyles={menuItemStyles(verticalNavOptions, theme)}
         renderExpandIcon={({ open }) => <RenderExpandIcon open={open} transitionDuration={transitionDuration} />}
@@ -423,8 +431,8 @@ const VerticalMenu = ({ dictionary, scrollMenu }: Props) => {
       >
         <GenerateVerticalMenu menuData={menuData(dictionary, params)} />
       </Menu> */}
-        </ScrollWrapper>
-    )
+    </ScrollWrapper>
+  )
 }
 
 export default VerticalMenu

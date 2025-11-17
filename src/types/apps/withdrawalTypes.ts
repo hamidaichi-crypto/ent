@@ -62,6 +62,21 @@ export type WithdrawalType = {
   //   avatarColor?: ThemeColor
 }
 
+export type WithdrawalLogType = {
+  id: number,
+  operator: string,
+  member_username: string,
+  member_id: number,
+  member_bank_name: string,
+  member_account_number: string,
+  member_account_name: string,
+  currency_code: string,
+  amount: string,
+  status: string,
+  remarks: string,
+  created_at: string,
+}
+
 
 export interface BankTransaction {
   id: number
