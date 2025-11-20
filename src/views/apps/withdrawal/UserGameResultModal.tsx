@@ -18,7 +18,7 @@ import {
   TableCell,
   TableHead, Chip,
   CircularProgress
-} from '@mui/material'
+} from '@mui/material';
 
 // Third-party Imports
 import classnames from 'classnames'
@@ -34,7 +34,9 @@ import {
   getFacetedUniqueValues,
   getFacetedMinMaxValues
 } from '@tanstack/react-table'
-import type { ColumnDef } from '@tanstack/react-table'
+import type { ColumnDef, FilterFn } from '@tanstack/react-table'
+import { rankItem } from '@tanstack/match-sorter-utils'
+import type { RankingInfo } from '@tanstack/match-sorter-utils'
 // Third-party Imports
 import { toast } from 'react-toastify'
 
@@ -47,6 +49,15 @@ import { useFetchData, usePostData } from '@/utils/api'
 
 // Style Imports
 import tableStyles from '@core/styles/table.module.css'
+
+declare module '@tanstack/table-core' {
+  interface FilterFns {
+    fuzzy: FilterFn<unknown>
+  }
+  interface FilterMeta {
+    itemRank: RankingInfo
+  }
+}
 
 type WithdrawalTypeWithAction = WithdrawalType & {
   action?: string
@@ -80,6 +91,20 @@ type GameResult = {
   market: string
   choice: string
 }
+
+const fuzzyFilter: FilterFn<any> = (row, columnId, value, addMeta) => {
+  // Rank the item
+  const itemRank = rankItem(row.getValue(columnId), value)
+
+  // Store the itemRank info
+  addMeta({
+    itemRank
+  })
+
+  // Return if the item should be filtered in/out
+  return itemRank.passed
+}
+
 
 const formatCurrency = (amount: number | string | null | undefined, alignRight: boolean = true) => {
   if (amount === null || amount === undefined) {
@@ -255,13 +280,16 @@ const UserGameResultModal = ({
   const table = useReactTable({
     data: gameReports,
     columns,
+    filterFns: {
+      fuzzy: fuzzyFilter
+    },
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
     getFacetedRowModel: getFacetedRowModel(),
     getFacetedUniqueValues: getFacetedUniqueValues(),
-    getFacetedMinMaxValues: getFacetedMinMaxValues(),
+    getFacetedMinMaxValues: getFacetedMinMaxValues()
   })
 
   const groupColors: { [key: string]: string } = {
@@ -282,7 +310,7 @@ const UserGameResultModal = ({
 
   return (
     <>
-      <Dialog open={open} onClose={onClose} fullWidth maxWidth='6xl'>
+      <Dialog open={open} onClose={onClose} fullWidth maxWidth={false}>
         <DialogTitle>Game Reports</DialogTitle>
         <IconButton onClick={onClose} className='absolute block-start-4 inline-end-4'>
           <i className='ri-close-line' />
@@ -411,7 +439,7 @@ const UserGameResultModal = ({
         </DialogContent>
         <DialogActions></DialogActions>
       </Dialog>
-      <Dialog open={gameResultsOpen} onClose={handleGameResultsClose} fullWidth maxWidth='xl'>
+      <Dialog open={gameResultsOpen} onClose={handleGameResultsClose} fullWidth maxWidth={false}>
         <DialogTitle>Game Results for {selectedGameProviderCode}</DialogTitle>
         <IconButton onClick={handleGameResultsClose} className='absolute block-start-4 inline-end-4'>
           <i className='ri-close-line' />
