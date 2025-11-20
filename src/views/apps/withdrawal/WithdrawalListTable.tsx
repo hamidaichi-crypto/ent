@@ -64,6 +64,7 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogActions from "@mui/material/DialogActions";
 import UserWithdrawalModal from './UserWithdrawalModal'
+import UserGameResultModal from './UserGameResultModal'
 
 import {
   Tabs, Tab, Box, Grid, Table, TableBody, TableRow, TableCell,
@@ -256,6 +257,8 @@ const WithdrawalListTable = ({
   const [globalFilter, setGlobalFilter] = useState('')
 
   const [isWithdrawDetailModalOpen, setIsWithdrawDetailModalOpen] = useState(false)
+  const [isGameResultModalOpen, setIsGameResultModalOpen] = useState(false)
+
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<WithdrawalTypeWithAction | null>(null)
   const [isCrossBettingsModalOpen, setIsCrossBettingsModalOpen] = useState(false);
   const [selectedWithdrawalForBettings, setSelectedWithdrawalForBettings] = useState<WithdrawalTypeWithAction | null>(null);
@@ -285,6 +288,12 @@ const WithdrawalListTable = ({
               setIsWithdrawDetailModalOpen(true)
             }}>
               <i className='ri-eye-line text-textSecondary' />
+            </IconButton>
+            <IconButton size='small' onClick={() => {
+              setSelectedWithdrawal(row.original)
+              setIsGameResultModalOpen(true)
+            }}>
+              <i className='ri-gamepad-line text-textSecondary' />
             </IconButton>
           </div>
         ),
@@ -496,6 +505,18 @@ const WithdrawalListTable = ({
         open={isWithdrawDetailModalOpen}
         onClose={() => {
           setIsWithdrawDetailModalOpen(false)
+          setSelectedWithdrawal(null)
+        }}
+        onReloadTable={() => {
+          onSearch()
+        }}
+      />
+
+      <UserGameResultModal
+        withdrawal={selectedWithdrawal}
+        open={isGameResultModalOpen}
+        onClose={() => {
+          setIsGameResultModalOpen(false)
           setSelectedWithdrawal(null)
         }}
         onReloadTable={() => {
