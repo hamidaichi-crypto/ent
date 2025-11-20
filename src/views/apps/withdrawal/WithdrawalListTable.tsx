@@ -40,6 +40,7 @@ import DialogAddNewWithdrawal from './DialogAddNewWithdrawal'
 
 // Type Imports
 import type { WithdrawalType, CrossBettingTransaction } from '@/types/apps/withdrawalTypes'
+import type { MemberType } from '@/types/apps/memberTypes'
 import { Transaction } from '@/types/apps/withdrawalTypes'
 import type { Locale } from '@configs/i18n'
 
@@ -64,6 +65,7 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogActions from "@mui/material/DialogActions";
 import UserWithdrawalModal from './UserWithdrawalModal'
+import UserDetailModal from '../member/list/UserDetailModal'
 import UserGameResultModal from './UserGameResultModal'
 
 import {
@@ -262,6 +264,10 @@ const WithdrawalListTable = ({
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<WithdrawalTypeWithAction | null>(null)
   const [isCrossBettingsModalOpen, setIsCrossBettingsModalOpen] = useState(false);
   const [selectedWithdrawalForBettings, setSelectedWithdrawalForBettings] = useState<WithdrawalTypeWithAction | null>(null);
+  const [isUserDetailModalOpen, setIsUserDetailModalOpen] = useState(false)
+  const [selectedUsernameForDetail, setSelectedUsernameForDetail] = useState<string | null>(null)
+  const [selectedUserIdForDetail, setSelectedUserIdForDetail] = useState<number | null>(null)
+  const [selectedUserForDetail, setSelectedUserForDetail] = useState<MemberType | null>(null)
 
   // Hooks
   const { lang: locale } = useParams()
@@ -308,11 +314,33 @@ const WithdrawalListTable = ({
       }),
       columnHelper.accessor('member_id', {
         header: 'Member ID',
-        cell: ({ row }) => <Typography>{row.original.member_id}</Typography>
+        cell: ({ row }) => (
+          <Typography
+            className='cursor-pointer'
+            sx={{ color: 'primary.main', '&:hover': { textDecoration: 'underline' } }}
+            onClick={() => {
+              setSelectedUsernameForDetail(row.original.username)
+              setSelectedUserIdForDetail(row.original.member_id)
+              setSelectedUserForDetail(row.original as unknown as MemberType)
+              setIsUserDetailModalOpen(true)
+            }}
+          >{row.original.member_id}</Typography>
+        )
       }),
       columnHelper.accessor('username', {
         header: 'Username',
-        cell: ({ row }) => <Typography>{row.original.username}</Typography>
+        cell: ({ row }) => (
+          <Typography
+            className='cursor-pointer'
+            sx={{ color: 'primary.main', '&:hover': { textDecoration: 'underline' } }}
+            onClick={() => {
+              setSelectedUsernameForDetail(row.original.username)
+              setSelectedUserIdForDetail(row.original.member_id)
+              setSelectedUserForDetail(row.original as unknown as MemberType)
+              setIsUserDetailModalOpen(true)
+            }}
+          >{row.original.username}</Typography>
+        )
       }),
       columnHelper.accessor('risk_score', {
         header: 'Risk Score',
@@ -530,6 +558,18 @@ const WithdrawalListTable = ({
           setSelectedWithdrawalForBettings(null);
         }}
         withdrawal={selectedWithdrawalForBettings}
+      />
+      <UserDetailModal
+        defaultTab={2}
+        username={selectedUsernameForDetail}
+        userId={selectedUserIdForDetail}
+        user={selectedUserForDetail}
+        open={isUserDetailModalOpen}
+        onClose={() => {
+          setIsUserDetailModalOpen(false)
+          setSelectedUsernameForDetail(null)
+          setSelectedUserForDetail(null)
+        }}
       />
       {/* <AddUserDrawer
                 open={addUserOpen}
