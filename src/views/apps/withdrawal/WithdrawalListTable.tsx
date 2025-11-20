@@ -40,6 +40,7 @@ import DialogAddNewWithdrawal from './DialogAddNewWithdrawal'
 
 // Type Imports
 import type { WithdrawalType, CrossBettingTransaction } from '@/types/apps/withdrawalTypes'
+import type { MemberType } from '@/types/apps/memberTypes'
 import { Transaction } from '@/types/apps/withdrawalTypes'
 import type { Locale } from '@configs/i18n'
 
@@ -64,6 +65,8 @@ import DialogContent from '@mui/material/DialogContent'
 import DialogTitle from '@mui/material/DialogTitle'
 import DialogActions from "@mui/material/DialogActions";
 import UserWithdrawalModal from './UserWithdrawalModal'
+import UserDetailModal from '../member/list/UserDetailModal'
+import UserGameResultModal from './UserGameResultModal'
 
 import {
   Tabs, Tab, Box, Grid, Table, TableBody, TableRow, TableCell,
@@ -256,9 +259,15 @@ const WithdrawalListTable = ({
   const [globalFilter, setGlobalFilter] = useState('')
 
   const [isWithdrawDetailModalOpen, setIsWithdrawDetailModalOpen] = useState(false)
+  const [isGameResultModalOpen, setIsGameResultModalOpen] = useState(false)
+
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<WithdrawalTypeWithAction | null>(null)
   const [isCrossBettingsModalOpen, setIsCrossBettingsModalOpen] = useState(false);
   const [selectedWithdrawalForBettings, setSelectedWithdrawalForBettings] = useState<WithdrawalTypeWithAction | null>(null);
+  const [isUserDetailModalOpen, setIsUserDetailModalOpen] = useState(false)
+  const [selectedUsernameForDetail, setSelectedUsernameForDetail] = useState<string | null>(null)
+  const [selectedUserIdForDetail, setSelectedUserIdForDetail] = useState<number | null>(null)
+  const [selectedUserForDetail, setSelectedUserForDetail] = useState<MemberType | null>(null)
 
   // Hooks
   const { lang: locale } = useParams()
@@ -286,6 +295,12 @@ const WithdrawalListTable = ({
             }}>
               <i className='ri-eye-line text-textSecondary' />
             </IconButton>
+            <IconButton size='small' onClick={() => {
+              setSelectedWithdrawal(row.original)
+              setIsGameResultModalOpen(true)
+            }}>
+              <i className='ri-gamepad-line text-textSecondary' />
+            </IconButton>
           </div>
         ),
         enableSorting: false,
@@ -299,11 +314,33 @@ const WithdrawalListTable = ({
       }),
       columnHelper.accessor('member_id', {
         header: 'Member ID',
-        cell: ({ row }) => <Typography>{row.original.member_id}</Typography>
+        cell: ({ row }) => (
+          <Typography
+            className='cursor-pointer'
+            sx={{ color: 'primary.main', '&:hover': { textDecoration: 'underline' } }}
+            onClick={() => {
+              setSelectedUsernameForDetail(row.original.username)
+              setSelectedUserIdForDetail(row.original.member_id)
+              setSelectedUserForDetail(row.original as unknown as MemberType)
+              setIsUserDetailModalOpen(true)
+            }}
+          >{row.original.member_id}</Typography>
+        )
       }),
       columnHelper.accessor('username', {
         header: 'Username',
-        cell: ({ row }) => <Typography>{row.original.username}</Typography>
+        cell: ({ row }) => (
+          <Typography
+            className='cursor-pointer'
+            sx={{ color: 'primary.main', '&:hover': { textDecoration: 'underline' } }}
+            onClick={() => {
+              setSelectedUsernameForDetail(row.original.username)
+              setSelectedUserIdForDetail(row.original.member_id)
+              setSelectedUserForDetail(row.original as unknown as MemberType)
+              setIsUserDetailModalOpen(true)
+            }}
+          >{row.original.username}</Typography>
+        )
       }),
       columnHelper.accessor('risk_score', {
         header: 'Risk Score',
@@ -420,17 +457,6 @@ const WithdrawalListTable = ({
         <TableFilters filters={filters} onFilterChange={onFilterChange} onSearch={onManualSearch} />
         <Divider />
         <div className='flex justify-between gap-4 p-5 flex-col items-start sm:flex-row sm:items-center'>
-          {/* <Button
-                        color='secondary'
-                        variant='outlined'
-                        startIcon={<i className='ri-upload-2-line' />}
-                        className='max-sm:is-full'
-                    >
-                        Export
-                    </Button> */}
-          {/* <div className='flex items-center gap-x-4 max-sm:gap-y-4 flex-col max-sm:is-full sm:flex-row'>
-            <DialogAddNewWithdrawal />
-          </div> */}
         </div>
         <div className='overflow-x-auto'>
           <table className={tableStyles.table}>
@@ -509,6 +535,21 @@ const WithdrawalListTable = ({
           setIsWithdrawDetailModalOpen(false)
           setSelectedWithdrawal(null)
         }}
+        onReloadTable={() => {
+          onSearch()
+        }}
+      />
+
+      <UserGameResultModal
+        withdrawal={selectedWithdrawal}
+        open={isGameResultModalOpen}
+        onClose={() => {
+          setIsGameResultModalOpen(false)
+          setSelectedWithdrawal(null)
+        }}
+        onReloadTable={() => {
+          onSearch()
+        }}
       />
       <CrossBettingsDialog
         open={isCrossBettingsModalOpen}
@@ -517,6 +558,18 @@ const WithdrawalListTable = ({
           setSelectedWithdrawalForBettings(null);
         }}
         withdrawal={selectedWithdrawalForBettings}
+      />
+      <UserDetailModal
+        defaultTab={2}
+        username={selectedUsernameForDetail}
+        userId={selectedUserIdForDetail}
+        user={selectedUserForDetail}
+        open={isUserDetailModalOpen}
+        onClose={() => {
+          setIsUserDetailModalOpen(false)
+          setSelectedUsernameForDetail(null)
+          setSelectedUserForDetail(null)
+        }}
       />
       {/* <AddUserDrawer
                 open={addUserOpen}

@@ -30,8 +30,8 @@ const WithdrawalList = () => {
 
   // Calculate default dates
   const today = new Date()
-  const twoWeeksAgo = new Date(today)
-  twoWeeksAgo.setDate(today.getDate() - 14)
+  const oneWeeksAgo = new Date(today)
+  oneWeeksAgo.setDate(today.getDate() - 7)
 
   const formatDate = (date: Date) => {
     const year = date.getFullYear()
@@ -41,7 +41,7 @@ const WithdrawalList = () => {
     return `${year}-${month}-${day}`
   }
 
-  const defaultStartDate = formatDate(twoWeeksAgo)
+  const defaultStartDate = formatDate(oneWeeksAgo)
   const defaultEndDate = formatDate(today)
 
   const [filters, setFilters] = useState<{
