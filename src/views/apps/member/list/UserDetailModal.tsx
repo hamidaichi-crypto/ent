@@ -172,9 +172,10 @@ const UserDetailModal = ({
     if (!open) { // When the modal is closed
       setTabValue(defaultTab || 0)
       setWalletData(null)
-      // setWalletLogs(null)
+      setWalletLogs(null)
       setPromotionLogs(null)
       setError(null)
+      setTabValue(0)
       setUserData(null) // clear local state, but keep cache
     }
   }, [open, defaultTab])
