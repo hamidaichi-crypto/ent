@@ -262,6 +262,7 @@ const WithdrawalListTable = ({
   const [isGameResultModalOpen, setIsGameResultModalOpen] = useState(false)
 
   const [selectedWithdrawal, setSelectedWithdrawal] = useState<WithdrawalTypeWithAction | null>(null)
+  const [selectedWithdrawalId, setSelectedWithdrawalId] = useState<number | null>(null)
   const [isCrossBettingsModalOpen, setIsCrossBettingsModalOpen] = useState(false);
   const [selectedWithdrawalForBettings, setSelectedWithdrawalForBettings] = useState<WithdrawalTypeWithAction | null>(null);
   const [isUserDetailModalOpen, setIsUserDetailModalOpen] = useState(false)
@@ -321,6 +322,7 @@ const WithdrawalListTable = ({
             onClick={() => {
               setSelectedUsernameForDetail(row.original.username)
               setSelectedUserIdForDetail(row.original.member_id)
+              setSelectedWithdrawalId(row.original.id)
               setSelectedUserForDetail(row.original as unknown as MemberType)
               setIsUserDetailModalOpen(true)
             }}
@@ -337,6 +339,7 @@ const WithdrawalListTable = ({
               setSelectedUsernameForDetail(row.original.username)
               setSelectedUserIdForDetail(row.original.member_id)
               setSelectedUserForDetail(row.original as unknown as MemberType)
+              setSelectedWithdrawalId(row.original.id)
               setIsUserDetailModalOpen(true)
             }}
           >{row.original.username}</Typography>
@@ -563,6 +566,7 @@ const WithdrawalListTable = ({
         defaultTab={2}
         username={selectedUsernameForDetail}
         userId={selectedUserIdForDetail}
+        withdrawId={selectedWithdrawalId}
         user={selectedUserForDetail}
         open={isUserDetailModalOpen}
         onClose={() => {

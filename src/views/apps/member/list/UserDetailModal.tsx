@@ -29,12 +29,14 @@ const UserDetailModal = ({
   username,
   user,
   userId,
+  withdrawId,
   open,
   onClose,
   defaultTab
 }: {
   username: string | null
   userId: number | null
+  withdrawId?: number | null
   user: MemberType | null
   open: boolean
   onClose: () => void
@@ -86,6 +88,8 @@ const UserDetailModal = ({
     console.log("load user info")
     if (!open || !username || !userId) return
 
+    // loadUserData(username)
+
     // ✅ If cached, use it immediately
     if (cacheRef.current[username]) {
       console.log("load user info cachews", cacheRef.current[username])
@@ -122,9 +126,10 @@ const UserDetailModal = ({
   // Fetch wallet logs when tab is clicked
   useEffect(() => {
     const loadWalletLogs = async () => {
-      if (tabValue === 2 && userId && !walletLogs) {
-        setWalletLogsLoading(true)
+      if (tabValue === 2 && userId) {
+        setWalletLogs(null) // Always clear previous logs before fetching
         setWalletLogsError(null)
+        setWalletLogsLoading(true)
         try {
           const response = await fetchData(`/members/wallet_logs?user_id=${userId}`)
 
@@ -138,7 +143,7 @@ const UserDetailModal = ({
     }
 
     loadWalletLogs()
-  }, [tabValue, userId, walletLogs, fetchData])
+  }, [tabValue, userId, fetchData, withdrawId])
 
   // Fetch promotion logs when tab is clicked
   useEffect(() => {
@@ -164,15 +169,12 @@ const UserDetailModal = ({
   // Don’t clear cache on close → only reset modal state
   useEffect(() => {
     // Reset tab and data on close
-    if (!open) {
+    if (!open) { // When the modal is closed
       setTabValue(defaultTab || 0)
       setWalletData(null)
       setWalletLogs(null)
       setPromotionLogs(null)
-    }
-    if (!open) {
       setError(null)
-      setLoading(false)
       setUserData(null) // clear local state, but keep cache
     }
   }, [open, defaultTab])
@@ -511,7 +513,11 @@ const UserDetailModal = ({
                       <TableCell>Balance</TableCell>
                       <TableCell>Details</TableCell>
                       <TableCell>Operator</TableCell>
+                      {withdrawId && (
+                        <TableCell>Username(Withdraw ID)</TableCell>
+                      )}
                       <TableCell>Status</TableCell>
+
                     </TableRow>
                   </TableHead>
                   <TableBody>
@@ -523,6 +529,7 @@ const UserDetailModal = ({
                         <TableCell>{log.balance}</TableCell>
                         <TableCell>{log.details ?? '-'}</TableCell>
                         <TableCell>{log.operator}</TableCell>
+                        {withdrawId && <TableCell>{log.username} ({withdrawId})</TableCell>}
                         <TableCell>{log.status_name}</TableCell>
                       </TableRow>
                     ))}
