@@ -80,9 +80,13 @@ const WithdrawalList = () => {
 
       console.log("fetchWithdrawalLogData called fetcdhdata")
       const data = await fetchData(queryString)
-      console.log("data", data)
       setWithdrawalData(data?.data?.logs)
-      setPaginationData({ current_page: 1, last_page: 1, per_page: 30, total: 0 })
+      setPaginationData({
+        current_page: data?.data?.paginations.current_page,
+        last_page: data?.data?.paginations.last_page,
+        per_page: data?.data?.paginations.per_page,
+        total: data?.data?.paginations.total
+      })
     } catch (error) {
       console.error('Failed to fetch withdrawal data:', error)
       setWithdrawalData([]) // Set to empty array on error

@@ -14,15 +14,37 @@ import Collapse from '@mui/material/Collapse'
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
 import Divider from '@mui/material/Divider'
-import { Tabs, Tab, Box, Grid, Table, TableBody, TableRow, TableCell, TableHead } from '@mui/material'
+import { Tabs, Tab, Box, Grid, Table, TableBody, TableRow, TableCell, TableHead, Pagination } from '@mui/material'
 
 // Type Imports
-import type { MemberType } from '@/types/apps/memberTypes'
+import type { MemberType, Pagination as PaginationType } from '@/types/apps/memberTypes'
 import type { WalletInfo, WalletLog, PromotionLog } from '@/types/apps/walletTypes'
 
 // Util Imports
 import { useFetchData } from '@/utils/api'
 import { formatDateTime } from '@/utils/dateFormatter'
+
+interface CustomPaginationActionsProps {
+  count: number
+  page: number
+  rowsPerPage: number
+  onPageChange: (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => void
+}
+
+// Custom Pagination Actions Component
+function TablePaginationActionsWithPages(props: CustomPaginationActionsProps) {
+  const { count, page, rowsPerPage, onPageChange } = props
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, newPage: number) => {
+    onPageChange(event as any, newPage - 1)
+  }
+
+  const pageCount = Math.ceil(count / rowsPerPage)
+
+  return pageCount > 1 ? (
+    <Pagination count={pageCount} page={page + 1} onChange={handlePageChange} showFirstButton showLastButton color='primary' />
+  ) : null
+}
 
 // --- User Detail Modal Component ---
 const UserDetailModal = ({
@@ -58,6 +80,9 @@ const UserDetailModal = ({
   const [promotionLogs, setPromotionLogs] = useState<PromotionLog[] | null>(null)
   const [promotionLogsLoading, setPromotionLogsLoading] = useState(false)
   const [promotionLogsError, setPromotionLogsError] = useState<string | null>(null)
+
+  const [walletLogsPage, setWalletLogsPage] = useState(0)
+  const [walletLogsPagination, setWalletLogsPagination] = useState<PaginationType | null>(null)
 
   const [tabValue, setTabValue] = useState(defaultTab || 0)
 
@@ -125,15 +150,16 @@ const UserDetailModal = ({
 
   // Fetch wallet logs when tab is clicked
   useEffect(() => {
-    const loadWalletLogs = async () => {
+    const loadWalletLogs = async (page: number) => {
       if (tabValue === 2 && userId) {
         setWalletLogs(null) // Always clear previous logs before fetching
         setWalletLogsError(null)
         setWalletLogsLoading(true)
         try {
-          const response = await fetchData(`/members/wallet_logs?user_id=${userId}`)
+          const response = await fetchData(`/members/wallet_logs?user_id=${userId}&page=10&page=${page + 1}`)
 
           setWalletLogs(response?.data?.logs || [])
+          setWalletLogsPagination(response?.data?.paginations || null)
         } catch (err) {
           setWalletLogsError('Failed to load wallet logs.')
         } finally {
@@ -142,13 +168,36 @@ const UserDetailModal = ({
       }
     }
 
-    loadWalletLogs()
-  }, [tabValue, userId, fetchData, withdrawId])
+    loadWalletLogs(walletLogsPage)
+  }, [tabValue, userId, fetchData, withdrawId, walletLogsPage])
+
+  // Fetch recent wallet logs when tab is clicked
+  useEffect(() => {
+    const loadRecentWalletLogs = async (page: number) => {
+      if (tabValue === 3 && withdrawId) {
+        setWalletLogs(null) // Always clear previous logs before fetching
+        setWalletLogsError(null)
+        setWalletLogsLoading(true)
+        try {
+          const response = await fetchData(`/withdrawals/wallet_events/${withdrawId}?page=${page + 1}`)
+
+          setWalletLogs(response?.data?.logs || [])
+          setWalletLogsPagination(response?.data?.paginations || null)
+        } catch (err) {
+          setWalletLogsError('Failed to load recent wallet logs.')
+        } finally {
+          setWalletLogsLoading(false)
+        }
+      }
+    }
+
+    loadRecentWalletLogs(walletLogsPage)
+  }, [tabValue, withdrawId, fetchData, walletLogsPage])
 
   // Fetch promotion logs when tab is clicked
   useEffect(() => {
     const loadPromotionLogs = async () => {
-      if (tabValue === 3 && userId && !promotionLogs) {
+      if (tabValue === 4 && userId) {
         setPromotionLogsLoading(true)
         setPromotionLogsError(null)
         try {
@@ -164,7 +213,15 @@ const UserDetailModal = ({
     }
 
     loadPromotionLogs()
-  }, [tabValue, userId, promotionLogs, fetchData])
+  }, [tabValue, userId, fetchData])
+
+  // Reset pagination when switching between wallet log tabs
+  useEffect(() => {
+    if (tabValue === 2 || tabValue === 3) {
+      setWalletLogsPage(0)
+      setWalletLogsPagination(null)
+    }
+  }, [tabValue])
 
   // Don’t clear cache on close → only reset modal state
   useEffect(() => {
@@ -174,8 +231,10 @@ const UserDetailModal = ({
       setWalletData(null)
       setWalletLogs(null)
       setPromotionLogs(null)
+      setWalletLogsPage(0)
       setError(null)
       setTabValue(0)
+      setWalletLogsPagination(null)
       setUserData(null) // clear local state, but keep cache
     }
   }, [open, defaultTab])
@@ -200,6 +259,7 @@ const UserDetailModal = ({
         <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
           <Tab label='Basic Info' />
           <Tab label='Wallet Info' />
+          <Tab label='Wallet Logs(Recent)' />
           <Tab label='Wallet Logs' />
           <Tab label='Promotion History' />
         </Tabs>
@@ -500,6 +560,74 @@ const UserDetailModal = ({
               {/* ===== Wallet Logs ===== */}
               {walletLogsLoading && (
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 5, gap: 2 }}>
+                  <CircularProgress size={24} /> <Typography>Loading recent wallet logs...</Typography>
+                </Box>
+              )}
+              {walletLogsError && <Typography color='error'>{walletLogsError}</Typography>}
+              {walletLogs && (
+                <Table size='small' sx={{ mt: 2 }}>
+                  <TableHead>
+                    <TableRow>
+                      <TableCell>Date</TableCell>
+                      <TableCell>Transaction Type</TableCell>
+                      <TableCell>Amount</TableCell>
+                      <TableCell>Balance</TableCell>
+                      <TableCell>Details</TableCell>
+                      <TableCell>Operator</TableCell>
+                      {withdrawId && (
+                        <TableCell>Username(Withdraw ID)</TableCell>
+                      )}
+                      <TableCell>Status</TableCell>
+
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    {walletLogs.map(log => (
+                      <TableRow key={log.id}>
+                        <TableCell>{formatDateTime(log.created_at)}</TableCell>
+                        <TableCell>{log.transaction_type}</TableCell>
+                        <TableCell>{log.amount}</TableCell>
+                        <TableCell>{log.balance}</TableCell>
+                        <TableCell>{log.details ?? '-'}</TableCell>
+                        <TableCell>{log.operator}</TableCell>
+                        {withdrawId && <TableCell>{log.username} ({withdrawId})</TableCell>}
+                        <TableCell>{log.status_name}</TableCell>
+                      </TableRow>
+                    ))}
+
+                    {/* Fallback if no wallet logs */}
+                    {(!walletLogs || walletLogs.length === 0) && (
+                      <TableRow>
+                        <TableCell colSpan={6} align='center'>
+                          No wallet logs available
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              )}
+              {walletLogsPagination && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
+                  <Typography variant='body2'>
+                    {walletLogsLoading ? 'Loading...' : `${walletLogsPagination.from}-${walletLogsPagination.to} of ${walletLogsPagination.total}`}
+                  </Typography>
+                  <TablePaginationActionsWithPages
+                    count={walletLogsPagination.total}
+                    page={walletLogsPage}
+                    rowsPerPage={parseInt(walletLogsPagination.per_page, 10)}
+                    onPageChange={(event, newPage) => {
+                      setWalletLogsPage(newPage)
+                    }}
+                  />
+                </Box>
+              )}
+            </>
+          )}
+          {tabValue === 3 && userId && (
+            <>
+              {/* ===== Wallet Logs Recent ===== */}
+              {walletLogsLoading && (
+                <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 5, gap: 2 }}>
                   <CircularProgress size={24} /> <Typography>Loading wallet logs...</Typography>
                 </Box>
               )}
@@ -546,10 +674,25 @@ const UserDetailModal = ({
                   </TableBody>
                 </Table>
               )}
+              {walletLogsPagination && (
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
+                  <Typography variant='body2'>
+                    {walletLogsLoading ? 'Loading...' : `${walletLogsPagination.from}-${walletLogsPagination.to} of ${walletLogsPagination.total}`}
+                  </Typography>
+                  <TablePaginationActionsWithPages
+                    count={walletLogsPagination.total}
+                    page={walletLogsPage}
+                    rowsPerPage={parseInt(walletLogsPagination.per_page, 10)}
+                    onPageChange={(event, newPage) => {
+                      setWalletLogsPage(newPage)
+                    }}
+                  />
+                </Box>
+              )}
             </>
           )}
           {
-            tabValue === 3 && userId && (
+            tabValue === 4 && userId && (
 
               <>
                 {/* ===== Promotion History ===== */}

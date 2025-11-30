@@ -15,7 +15,8 @@ import Button from '@mui/material/Button'
 import Typography from '@mui/material/Typography'
 import Checkbox from '@mui/material/Checkbox'
 import { styled } from '@mui/material/styles'
-import TablePagination from '@mui/material/TablePagination'
+import { TablePagination, Box, Pagination } from '@mui/material'
+import type { TablePaginationActionsProps } from '@mui/material/TablePagination/TablePaginationActions'
 
 // Third-party Imports
 import classnames from 'classnames'
@@ -56,6 +57,28 @@ declare module '@tanstack/table-core' {
   interface FilterMeta {
     itemRank: RankingInfo
   }
+}
+
+interface CustomPaginationActionsProps {
+  count: number
+  page: number
+  rowsPerPage: number
+  onPageChange: (event: React.MouseEvent<HTMLButtonElement> | null, newPage: number) => void
+}
+
+// Custom Pagination Actions Component
+function TablePaginationActionsWithPages(props: CustomPaginationActionsProps) {
+  const { count, page, rowsPerPage, onPageChange } = props
+
+  const handlePageChange = (event: React.ChangeEvent<unknown>, newPage: number) => {
+    onPageChange(event as any, newPage - 1)
+  }
+
+  const pageCount = Math.ceil(count / rowsPerPage)
+
+  return pageCount > 1 ? (
+    <Pagination count={pageCount} page={page + 1} onChange={handlePageChange} showFirstButton showLastButton color='primary' />
+  ) : null
 }
 
 type WithdrawalTypeWithAction = WithdrawalLogType & {
@@ -283,21 +306,19 @@ const WithdrawalLogTable = ({
             )}
           </table>
         </div>
-        <TablePagination
-          rowsPerPageOptions={[10, 30, 50]}
-          component='div'
-          className='border-bs'
-          count={paginationData.total}
-          rowsPerPage={paginationData.per_page}
-          page={paginationData.current_page - 1}
-          SelectProps={{
-            inputProps: { 'aria-label': 'rows per page' }
-          }}
-          onPageChange={(_, page) => {
-            onPageChange(page + 1)
-          }}
-          onRowsPerPageChange={e => onRowsPerPageChange(Number(e.target.value))}
-        />
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', p: 2 }}>
+          <Typography variant='body2'>
+            {`${(paginationData.current_page - 1) * paginationData.per_page + 1}-${Math.min(paginationData.total, paginationData.current_page * paginationData.per_page)} of ${paginationData.total}`}
+          </Typography>
+          <TablePaginationActionsWithPages
+            count={paginationData.total}
+            page={paginationData.current_page - 1}
+            rowsPerPage={paginationData.per_page}
+            onPageChange={(event, newPage) => {
+              onPageChange(newPage + 1)
+            }}
+          />
+        </Box>
       </Card>
     </>
   )
