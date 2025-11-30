@@ -13,11 +13,11 @@ import CircularProgress from '@mui/material/CircularProgress'
 import Collapse from '@mui/material/Collapse'
 import Card from '@mui/material/Card'
 import CardHeader from '@mui/material/CardHeader'
-import Divider from '@mui/material/Divider'
-import { Tabs, Tab, Box, Grid, Table, TableBody, TableRow, TableCell, TableHead } from '@mui/material'
+import Divider from '@mui/material/Divider';
+import { Tabs, Tab, Box, Grid, Table, TableBody, TableRow, TableCell, TableHead, TablePagination } from '@mui/material'
 
 // Type Imports
-import type { MemberType } from '@/types/apps/memberTypes'
+import type { MemberType, Pagination } from '@/types/apps/memberTypes'
 import type { WalletInfo, WalletLog, PromotionLog } from '@/types/apps/walletTypes'
 
 // Util Imports
@@ -58,6 +58,9 @@ const UserDetailModal = ({
   const [promotionLogs, setPromotionLogs] = useState<PromotionLog[] | null>(null)
   const [promotionLogsLoading, setPromotionLogsLoading] = useState(false)
   const [promotionLogsError, setPromotionLogsError] = useState<string | null>(null)
+
+  const [walletLogsPage, setWalletLogsPage] = useState(0)
+  const [walletLogsPagination, setWalletLogsPagination] = useState<Pagination | null>(null)
 
   const [tabValue, setTabValue] = useState(defaultTab || 0)
 
@@ -125,15 +128,16 @@ const UserDetailModal = ({
 
   // Fetch wallet logs when tab is clicked
   useEffect(() => {
-    const loadWalletLogs = async () => {
+    const loadWalletLogs = async (page: number) => {
       if (tabValue === 2 && userId) {
         setWalletLogs(null) // Always clear previous logs before fetching
         setWalletLogsError(null)
         setWalletLogsLoading(true)
         try {
-          const response = await fetchData(`/members/wallet_logs?user_id=${userId}`)
+          const response = await fetchData(`/members/wallet_logs?user_id=${userId}&page=10&page=${page + 1}`)
 
           setWalletLogs(response?.data?.logs || [])
+          setWalletLogsPagination(response?.data?.paginations || null)
         } catch (err) {
           setWalletLogsError('Failed to load wallet logs.')
         } finally {
@@ -142,8 +146,8 @@ const UserDetailModal = ({
       }
     }
 
-    loadWalletLogs()
-  }, [tabValue, userId, fetchData, withdrawId])
+    loadWalletLogs(walletLogsPage)
+  }, [tabValue, userId, fetchData, withdrawId, walletLogsPage])
 
   // Fetch promotion logs when tab is clicked
   useEffect(() => {
@@ -174,8 +178,10 @@ const UserDetailModal = ({
       setWalletData(null)
       setWalletLogs(null)
       setPromotionLogs(null)
+      setWalletLogsPage(0)
       setError(null)
       setTabValue(0)
+      setWalletLogsPagination(null)
       setUserData(null) // clear local state, but keep cache
     }
   }, [open, defaultTab])
@@ -545,6 +551,22 @@ const UserDetailModal = ({
                     )}
                   </TableBody>
                 </Table>
+              )}
+              {walletLogsPagination && (
+                <TablePagination
+                  component='div'
+                  count={walletLogsPagination.total}
+                  page={walletLogsPage}
+                  onPageChange={(event, newPage) => setWalletLogsPage(newPage)}
+                  rowsPerPage={parseInt(walletLogsPagination.per_page, 10)}
+                  onRowsPerPageChange={() => {
+                    // Not implemented as per_page is fixed from API
+                  }}
+                  rowsPerPageOptions={[]} // Hide rows per page options
+                  labelDisplayedRows={({ from, to, count }) =>
+                    `${from}-${to} of ${count !== -1 ? count : `more than ${to}`}`
+                  }
+                />
               )}
             </>
           )}
