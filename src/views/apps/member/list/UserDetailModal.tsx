@@ -259,8 +259,8 @@ const UserDetailModal = ({
         <Tabs value={tabValue} onChange={(_, newValue) => setTabValue(newValue)} sx={{ borderBottom: 1, borderColor: 'divider', px: 2 }}>
           <Tab label='Basic Info' />
           <Tab label='Wallet Info' />
-          <Tab label='Wallet Logs' />
           <Tab label='Wallet Logs(Recent)' />
+          <Tab label='Wallet Logs' />
           <Tab label='Promotion History' />
         </Tabs>
         <DialogContent sx={{ pb: 20 }}>
@@ -560,7 +560,7 @@ const UserDetailModal = ({
               {/* ===== Wallet Logs ===== */}
               {walletLogsLoading && (
                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 5, gap: 2 }}>
-                  <CircularProgress size={24} /> <Typography>Loading wallet logs...</Typography>
+                  <CircularProgress size={24} /> <Typography>Loading recent wallet logs...</Typography>
                 </Box>
               )}
               {walletLogsError && <Typography color='error'>{walletLogsError}</Typography>}
