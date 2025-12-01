@@ -566,7 +566,7 @@ const UserDetailModal = ({
                             {/* ===== Wallet Logs ===== */}
                             {walletLogsLoading && (
                                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 5, gap: 2 }}>
-                                    <CircularProgress size={24} /> <Typography>Loading recent wallet logs...</Typography>
+                                    <CircularProgress size={24} /> <Typography>Loading wallet logs...</Typography>
                                 </Box>
                             )}
                             {walletLogsError && <Typography color='error'>{walletLogsError}</Typography>}
@@ -634,7 +634,7 @@ const UserDetailModal = ({
                             {/* ===== Wallet Logs Recent ===== */}
                             {walletLogsLoading && (
                                 <Box sx={{ display: 'flex', justifyContent: 'center', alignItems: 'center', p: 5, gap: 2 }}>
-                                    <CircularProgress size={24} /> <Typography>Loading wallet logs...</Typography>
+                                    <CircularProgress size={24} /> <Typography>Loading recent wallet logs...</Typography>
                                 </Box>
                             )}
                             {walletLogsError && <Typography color='error'>{walletLogsError}</Typography>}
