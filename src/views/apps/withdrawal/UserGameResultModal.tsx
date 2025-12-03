@@ -17,7 +17,8 @@ import {
   TableRow,
   TableCell,
   TableHead, Chip,
-  CircularProgress
+  CircularProgress,
+  Button
 } from '@mui/material';
 
 // Third-party Imports
@@ -471,6 +472,30 @@ const UserGameResultModal = ({
 
                           if (key === 'ticket_time' || key === 'settlement_time') {
                             return <TableCell key={key}>{formatDateTime(value)}</TableCell>
+                          }
+
+                          if (key === 'is_trigger_free_spin' || key === 'is_buy_free_spin' || key === 'is_round_end') {
+                            return <TableCell key={key}>{value ? 'True' : 'False'}</TableCell>
+                          }
+
+                          if (key === 'result_url') {
+                            return (
+                              <TableCell key={key}>
+                                {value ? (
+                                  <Button
+                                    variant='contained'
+                                    size='small'
+                                    href={value}
+                                    target='_blank'
+                                    rel='noopener noreferrer'
+                                  >
+                                    Detail
+                                  </Button>
+                                ) : (
+                                  'N/A'
+                                )}
+                              </TableCell>
+                            )
                           }
 
                           return <TableCell key={key}>{value}</TableCell>

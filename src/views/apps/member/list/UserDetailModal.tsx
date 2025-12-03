@@ -642,12 +642,14 @@ const UserDetailModal = ({
                 <Table size='small' sx={{ mt: 2 }}>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Date</TableCell>
-                      <TableCell>Transaction Type</TableCell>
+                      <TableCell>Created Date</TableCell>
+                      <TableCell>Approved Time</TableCell>
+                      <TableCell>Fund</TableCell>
+                      <TableCell>Remarks</TableCell>
+                      <TableCell>Operator</TableCell>
                       <TableCell>Amount</TableCell>
                       <TableCell>Balance</TableCell>
                       <TableCell>Details</TableCell>
-                      <TableCell>Operator</TableCell>
                       {withdrawId && (
                         <TableCell>Username(Withdraw ID)</TableCell>
                       )}
@@ -659,11 +661,13 @@ const UserDetailModal = ({
                     {walletLogs.map(log => (
                       <TableRow key={log.id}>
                         <TableCell>{formatDateTime(log.created_at)}</TableCell>
+                        <TableCell>{formatDateTime(log.approved_at)}</TableCell>
                         <TableCell>{log.transaction_type}</TableCell>
+                        <TableCell>{log.remarks ?? '-'}</TableCell>
+                        <TableCell>{log.operator}</TableCell>
                         <TableCell>{log.amount}</TableCell>
                         <TableCell>{log.balance}</TableCell>
                         <TableCell>{log.details ?? '-'}</TableCell>
-                        <TableCell>{log.operator}</TableCell>
                         {withdrawId && <TableCell>{log.username} ({withdrawId})</TableCell>}
                         <TableCell>{log.status_name}</TableCell>
                       </TableRow>
