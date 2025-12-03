@@ -35,6 +35,7 @@ export type WalletLog = {
   remarks: string | null;
   created_at: string;
   refer_id: number | null;
+  approved_at: string;
   created_by: string;
   updated_by: string | null;
   details: string | null;
