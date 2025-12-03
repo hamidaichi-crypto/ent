@@ -10,6 +10,8 @@ import MenuItem from '@mui/material/MenuItem'
 import Select from '@mui/material/Select'
 import TextField from '@mui/material/TextField'
 import Button from '@mui/material/Button' // Import Button
+import InputAdornment from '@mui/material/InputAdornment'
+import IconButton from '@mui/material/IconButton'
 import type { SelectChangeEvent } from '@mui/material/Select'
 
 // Type Imports
@@ -17,6 +19,7 @@ import type { WithdrawalType } from '@/types/apps/withdrawalTypes'
 
 type Filters = {
   status: string[]
+  username: string | null
   startDate: string
   endDate: string
 }
@@ -40,6 +43,10 @@ const TableFilters = ({ filters, onFilterChange, onSearch }: TableFiltersProps) 
 
   const handleEndDateChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     onFilterChange({ ...filters, endDate: event.target.value })
+  }
+
+  const handleUsernameChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    onFilterChange({ ...filters, username: event.target.value || null })
   }
 
   return (
@@ -67,6 +74,33 @@ const TableFilters = ({ filters, onFilterChange, onSearch }: TableFiltersProps) 
               <MenuItem value='INCOMPLETE_PAYOUT'>Incomplete Payout</MenuItem>
             </Select>
           </FormControl>
+        </Grid>
+        <Grid size={{ xs: 12, sm: 3 }}>
+          <TextField
+            size='small'
+            fullWidth
+            label='Username'
+            type='text'
+            value={filters.username || ''}
+            onChange={handleUsernameChange}
+            InputLabelProps={{
+              shrink: true
+            }}
+            InputProps={{
+              endAdornment: (
+                <InputAdornment position='end'>
+                  <IconButton
+                    size='small'
+                    onClick={() => onFilterChange({ ...filters, username: null })}
+                    edge='end'
+                    sx={{ visibility: filters.username ? 'visible' : 'hidden' }}
+                  >
+                    <i className='ri-close-line' />
+                  </IconButton>
+                </InputAdornment>
+              )
+            }}
+          />
         </Grid>
         <Grid size={{ xs: 12, sm: 2 }}>
           <TextField

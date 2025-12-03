@@ -48,10 +48,12 @@ const WithdrawalList = () => {
     status: string[]
     startDate: string
     endDate: string
+    username: string | null
   }>({
     status: ['PENDING', 'IN_PROGRESS', 'RISKY', 'INCOMPLETE_PAYOUT'],
     startDate: defaultStartDate, // Set default start date
-    endDate: defaultEndDate // Set default end date
+    endDate: defaultEndDate, // Set default end date
+    username: null // Set default end date
   })
 
   // State to trigger data fetch
@@ -75,6 +77,9 @@ const WithdrawalList = () => {
       }
       if (currentFilters.endDate) {
         queryString += `&end_date=${currentFilters.endDate}`
+      }
+      if (currentFilters.username) {
+        queryString += `&username=${currentFilters.username}`
       }
 
       const data = await fetchData(queryString)
